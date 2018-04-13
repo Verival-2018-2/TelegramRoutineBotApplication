@@ -15,11 +15,11 @@ from db import Task
 def set_token():
     home = str(Path.home())
     with open(home + "/token_my_routinebot.txt") as infile:
-        lines = infile.readlines()
+        lines = infile.readline()
     TOKEN = ""
     for line in lines:
-        if line.strip() == "": break
         TOKEN += line
+    TOKEN = TOKEN.rstrip('\n')
     return TOKEN
 
 TOKEN = set_token()
