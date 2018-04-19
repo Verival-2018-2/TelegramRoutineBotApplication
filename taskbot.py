@@ -4,28 +4,42 @@ import json
 import requests
 import time
 import urllib
+from pathlib import Path
 
 import sqlalchemy
 
 import db
 from db import Task
 
-TOKEN = ""
+
+def set_token():
+    home = str(Path.home())
+    with open(home + "/token_my_routinebot.txt") as infile:
+        lines = infile.readline()
+    TOKEN = ""
+    for line in lines:
+        TOKEN += line
+    TOKEN = TOKEN.rstrip('\n')
+    return TOKEN
+
+TOKEN = set_token()
+
 URL = "https://api.telegram.org/bot{}/".format(TOKEN)
 
 HELP = """
- /new NOME
- /todo ID
- /doing ID
- /done ID
- /delete ID
- /list
- /rename ID NOME
- /dependson ID ID...
- /duplicate ID
- /priority ID PRIORITY{low, medium, high}
- /help
+/new NOME
+/todo ID
+/doing ID
+/done ID
+/delete ID
+/list
+/rename ID NOME
+/dependson ID ID...
+/duplicate ID
+/priority ID PRIORITY{low, medium, high}
+/help
 """
+
 
 def get_url(url):
     response = requests.get(url)
@@ -358,4 +372,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
