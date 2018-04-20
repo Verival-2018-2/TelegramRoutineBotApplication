@@ -29,23 +29,13 @@ def get_infos_file(input_file, set_password=False):
     info = info.rstrip('\n')
     return info
 
-# Authentication for user filing issue (must have read/write access to
-# repository to add issue to)
-USERNAME = get_infos_file("/username_git.txt", False)
-PASSWORD = get_infos_file("/username_git.txt", True)
-
-
-# The repository to add this issue to
-# REPO_OWNER = 'TecProg-20181'
-# REPO_NAME = 'my_routinebot'
-
 def make_github_issue(title, body=None):
     '''Create an issue on github.com using the given parameters.'''
     # Our url to create issues via POST
     url = 'https://api.github.com/repos/TecProg-20181/my_routinebot/issues'
     # Create an authenticated session to create the issue
     session = requests.Session()
-    session.auth = (USERNAME, PASSWORD)
+    session.auth = (get_infos_file("/username_git.txt", False), get_infos_file("/username_git.txt", True))
     # Create our issue
     issue = {'title': title,
              'body': body}
