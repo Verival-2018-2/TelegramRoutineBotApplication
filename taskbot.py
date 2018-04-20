@@ -97,6 +97,60 @@ def deps_text(task, chat, preceed=''):
 
     return text
 
+def define_message_duplicate(msg, chat):
+    task_id = int(msg)
+    query = db.session.query(Task).filter_by(id=task_id, chat=chat)
+    try:
+        task = query.one()
+    except sqlalchemy.orm.exc.NoResultFound:
+        send_message("_404_ Task {} not found x.x".format(task_id), chat)
+        return
+
+    dtask = Task(chat=task.chat, name=task.name, status=task.status, dependencies=task.dependencies,
+                 parents=task.parents, priority=task.priority, duedate=task.duedate)
+    db.session.add(dtask)
+
+    for t in task.dependencies.split(',')[:-1]:
+        qy = db.session.query(Task).filter_by(id=int(t), chat=chat)
+        t = qy.one()
+        t.parents += '{},'.format(dtask.id)
+    db.session.commit()
+    send_message(set_command_text(command).format(dtask.id, dtask.name), chat)
+
+def set_command_text(command):
+    if command == '/new':
+        text = 'New task *TODO* [[{}]] {}'
+    elif command == '/rename':
+        text = "You want to modify task {}, but you didn't provide any new text"
+    elif command == '/duplicate':
+        text = 'New task *TODO* [[{}]] {}'
+    elif command == '/delete':
+        text = 'Task [[{}]] deleted'
+    elif command == '/todo':
+        text = '*TODO* task [[{}]] {}'
+    elif command == '/doing':
+        text = '*DOING* task [[{}]] {}'
+    elif command == '/done':
+        text = '*DONE* task [[{}]] {}'
+    elif command == '/dependson':
+        text = 'Task {} dependencies up to date'
+    elif command == '/priority':
+        text = '*Task {}* priority has priority *{}*'
+    elif command == '/start':
+        text = 'Welcome! Here is a list of things you can do.'
+    elif command == '/help':
+        text = 'Here is a list of things you can do.'
+    # elif command == '/list' #fazer método para setar list
+        # text = 'metodo para lista'
+    return text
+
+def check_msg_exists(msg):
+    if not msg.isdigit():
+        return True
+
+def msg_no_task(chat):
+    send_message("You must inform the task id", chat)
+
 
 def handle_updates(updates):
     for update in updates["result"]:
@@ -121,7 +175,7 @@ def handle_updates(updates):
             task = Task(chat=chat, name=msg, status='TODO', dependencies='', parents='', priority='')
             db.session.add(task)
             db.session.commit()
-            send_message("New task *TODO* [[{}]] {}".format(task.id, task.name), chat)
+            send_message(set_command_text(command).format(task.id, task.name), chat)
 
         elif command == '/rename':
             text = ''
@@ -130,8 +184,8 @@ def handle_updates(updates):
                     text = msg.split(' ', 1)[1]
                 msg = msg.split(' ', 1)[0]
 
-            if not msg.isdigit():
-                send_message("You must inform the task id", chat)
+            if check_msg_exists(msg):
+                msg_no_task(chat)
             else:
                 task_id = int(msg)
                 query = db.session.query(Task).filter_by(id=task_id, chat=chat)
@@ -148,34 +202,16 @@ def handle_updates(updates):
                 old_text = task.name
                 task.name = text
                 db.session.commit()
-                send_message("Task {} redefined from {} to {}".format(task_id, old_text, text), chat)
+                send_message(set_command_text(command).format(task_id, old_text, text), chat)
         elif command == '/duplicate':
-            if not msg.isdigit():
-                send_message("You must inform the task id", chat)
+            if check_msg_exists(msg):
+                msg_no_task(chat)
             else:
-                task_id = int(msg)
-                query = db.session.query(Task).filter_by(id=task_id, chat=chat)
-                try:
-                    task = query.one()
-                except sqlalchemy.orm.exc.NoResultFound:
-                    send_message("_404_ Task {} not found x.x".format(task_id), chat)
-                    return
-
-                dtask = Task(chat=task.chat, name=task.name, status=task.status, dependencies=task.dependencies,
-                             parents=task.parents, priority=task.priority, duedate=task.duedate)
-                db.session.add(dtask)
-
-                for t in task.dependencies.split(',')[:-1]:
-                    qy = db.session.query(Task).filter_by(id=int(t), chat=chat)
-                    t = qy.one()
-                    t.parents += '{},'.format(dtask.id)
-
-                db.session.commit()
-                send_message("New task *TODO* [[{}]] {}".format(dtask.id, dtask.name), chat)
+                define_message_duplicate(msg, chat)
 
         elif command == '/delete':
-            if not msg.isdigit():
-                send_message("You must inform the task id", chat)
+            if check_msg_exists(msg):
+                msg_no_task(chat)
             else:
                 task_id = int(msg)
                 query = db.session.query(Task).filter_by(id=task_id, chat=chat)
@@ -190,11 +226,11 @@ def handle_updates(updates):
                     t.parents = t.parents.replace('{},'.format(task.id), '')
                 db.session.delete(task)
                 db.session.commit()
-                send_message("Task [[{}]] deleted".format(task_id), chat)
+                send_message(set_command_text(command).format(task_id), chat)
 
         elif command == '/todo':
-            if not msg.isdigit():
-                send_message("You must inform the task id", chat)
+            if check_msg_exists(msg):
+                msg_no_task(chat)
             else:
                 task_id = int(msg)
                 query = db.session.query(Task).filter_by(id=task_id, chat=chat)
@@ -205,11 +241,11 @@ def handle_updates(updates):
                     return
                 task.status = 'TODO'
                 db.session.commit()
-                send_message("*TODO* task [[{}]] {}".format(task.id, task.name), chat)
+                send_message(set_command_text(command).format(task.id, task.name), chat)
 
         elif command == '/doing':
-            if not msg.isdigit():
-                send_message("You must inform the task id", chat)
+            if check_msg_exists(msg):
+                msg_no_task(chat)
             else:
                 task_id = int(msg)
                 query = db.session.query(Task).filter_by(id=task_id, chat=chat)
@@ -220,11 +256,11 @@ def handle_updates(updates):
                     return
                 task.status = 'DOING'
                 db.session.commit()
-                send_message("*DOING* task [[{}]] {}".format(task.id, task.name), chat)
+                send_message(set_command_text(command).format(task.id, task.name), chat)
 
         elif command == '/done':
-            if not msg.isdigit():
-                send_message("You must inform the task id", chat)
+            if check_msg_exists(msg):
+                msg_no_task(chat)
             else:
                 task_id = int(msg)
                 query = db.session.query(Task).filter_by(id=task_id, chat=chat)
@@ -235,7 +271,7 @@ def handle_updates(updates):
                     return
                 task.status = 'DONE'
                 db.session.commit()
-                send_message("*DONE* task [[{}]] {}".format(task.id, task.name), chat)
+                send_message(set_command_text(command).format(task.id, task.name), chat)
 
         elif command == '/list':
             a = ''
@@ -248,6 +284,8 @@ def handle_updates(updates):
                     icon = '\U000023FA'
                 elif task.status == 'DONE':
                     icon = '\U00002611'
+                elif task.priority == 'priority':
+                    icon = 'u"\U0001F6A8"'
 
                 a += '[[{}]] {} {}\n'.format(task.id, icon, task.name)
                 a += deps_text(task, chat)
@@ -266,6 +304,27 @@ def handle_updates(updates):
                 a += '[[{}]] {}\n'.format(task.id, task.name)
             query = db.session.query(Task).filter_by(status='DONE', chat=chat).order_by(Task.id)
             a += '\n\U00002611 *DONE*\n'
+
+            for task in query.all():
+                a += '[[{}]] {}\n'.format(task.id, task.name)
+            query = db.session.query(Task).filter_by(priority='high', chat=chat).order_by(Task.id)
+            a += '\n\U0001F6A8 *PRIORITY*\n'
+            a += '\U0001F198 high priority\n'
+
+            for task in query.all():
+                a += '[[{}]] {}\n'.format(task.id, task.name)
+            query = db.session.query(Task).filter_by(priority='medium', chat=chat).order_by(Task.id)
+            a += '\U0001F198 medium priority\n'
+
+
+            for task in query.all():
+                a += '[[{}]] {}\n'.format(task.id, task.name)
+            query = db.session.query(Task).filter_by(priority='low', chat=chat).order_by(Task.id)
+            a += '\U0001F198 low priority\n'
+
+
+
+
             for task in query.all():
                 a += '[[{}]] {}\n'.format(task.id, task.name)
 
@@ -277,8 +336,8 @@ def handle_updates(updates):
                     text = msg.split(' ', 1)[1]
                 msg = msg.split(' ', 1)[0]
 
-            if not msg.isdigit():
-                send_message("You must inform the task id", chat)
+            if check_msg_exists(msg):
+                msg_no_task(chat)
             else:
                 task_id = int(msg)
                 query = db.session.query(Task).filter_by(id=task_id, chat=chat)
@@ -316,7 +375,7 @@ def handle_updates(updates):
                                 task.dependencies += str(depid) + ','
 
                 db.session.commit()
-                send_message("Task {} dependencies up to date".format(task_id), chat)
+                send_message(set_command_text(command).format(task_id), chat)
         elif command == '/priority':
             text = ''
             if msg != '':
@@ -324,8 +383,8 @@ def handle_updates(updates):
                     text = msg.split(' ', 1)[1]
                 msg = msg.split(' ', 1)[0]
 
-            if not msg.isdigit():
-                send_message("You must inform the task id", chat)
+            if check_msg_exists(msg):
+                msg_no_task(chat)
             else:
                 task_id = int(msg)
                 query = db.session.query(Task).filter_by(id=task_id, chat=chat)
