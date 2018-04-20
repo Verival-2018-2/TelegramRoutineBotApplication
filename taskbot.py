@@ -11,18 +11,53 @@ import sqlalchemy
 import db
 from db import Task
 
+import os
+import json
+import requests
 
-def set_token():
+
+def get_infos_file(input_file, set_password=False):
     home = str(Path.home())
-    with open(home + "/token_my_routinebot.txt") as infile:
+    # input_file = "/token_my_routinebot.txt"
+    with open(home + input_file) as infile:
+        if set_password == True:
+            lines = infile.readline()[1:]
         lines = infile.readline()
-    TOKEN = ""
+    info = ""
     for line in lines:
-        TOKEN += line
-    TOKEN = TOKEN.rstrip('\n')
-    return TOKEN
+        info += line
+    info = info.rstrip('\n')
+    return info
 
-TOKEN = set_token()
+# Authentication for user filing issue (must have read/write access to
+# repository to add issue to)
+USERNAME = get_infos_file("/username_git.txt", False)
+PASSWORD = get_infos_file("/username_git.txt", True)
+
+
+# The repository to add this issue to
+# REPO_OWNER = 'TecProg-20181'
+# REPO_NAME = 'my_routinebot'
+
+def make_github_issue(title, body=None):
+    '''Create an issue on github.com using the given parameters.'''
+    # Our url to create issues via POST
+    url = 'https://api.github.com/repos/TecProg-20181/my_routinebot/issues'
+    # Create an authenticated session to create the issue
+    session = requests.Session()
+    session.auth = (USERNAME, PASSWORD)
+    # Create our issue
+    issue = {'title': title,
+             'body': body}
+    # Add the issue to our repository
+    r = session.post(url, json.dumps(issue))
+    if r.status_code == 201:
+        print ('Successfully created Issue {0:s}'.format(title))
+    else:
+        print ('Could not create Issue {0:s}'.format(title))
+        print ('Response:', r.content)
+
+TOKEN = get_infos_file("/token_my_routinebot.txt", False)
 
 URL = "https://api.telegram.org/bot{}/".format(TOKEN)
 
@@ -176,6 +211,9 @@ def handle_updates(updates):
             db.session.add(task)
             db.session.commit()
             send_message(set_command_text(command).format(task.id, task.name), chat)
+            make_github_issue(task.name, 'Task of ID:[[{}]].\n Name of task:{}\n'.format(task.id, task.name))
+
+
 
         elif command == '/rename':
             text = ''
