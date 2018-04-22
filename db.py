@@ -27,7 +27,8 @@ class Task(Base):
         return "<Task(id={}, chat={}, name='{}', status='{}',\
                 dependencies='{}',parents='{}', priority='{}',\
                 duedate='{}')>".format(
-                self.id, self.chat, self.name, self.status
+                self.id, self.chat, self.name, self.status, self.dependencies,\
+                self.parents, self.priority, self.duedate
                 )
 
 Base.metadata.create_all(engine)

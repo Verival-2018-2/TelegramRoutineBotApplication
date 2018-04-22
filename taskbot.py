@@ -5,7 +5,7 @@ import requests
 import time
 import urllib
 from pathlib import Path
-
+from dateutil import parser
 import sqlalchemy
 
 import db
@@ -169,7 +169,7 @@ def set_command_text(command):
         # text = 'metodo para lista'
     return text
 
-def check_msg_exists(msg):
+def check_msg_not_exists(msg):
     if not msg.isdigit():
         return True
 
@@ -201,7 +201,7 @@ def handle_updates(updates):
             db.session.add(task)
             db.session.commit()
             send_message(set_command_text(command).format(task.id, task.name), chat)
-            make_github_issue(task.name, 'Task of ID:[[{}]].\n Name of task:{}\n'.format(task.id, task.name))
+            # make_github_issue(task.name, 'Task of ID:[[{}]].\n Name of task:{}\n'.format(task.id, task.name))
 
 
 
@@ -212,7 +212,7 @@ def handle_updates(updates):
                     text = msg.split(' ', 1)[1]
                 msg = msg.split(' ', 1)[0]
 
-            if check_msg_exists(msg):
+            if check_msg_not_exists(msg):
                 msg_no_task(chat)
             else:
                 task_id = int(msg)
@@ -232,13 +232,13 @@ def handle_updates(updates):
                 db.session.commit()
                 send_message(set_command_text(command).format(task_id, old_text, text), chat)
         elif command == '/duplicate':
-            if check_msg_exists(msg):
+            if check_msg_not_exists(msg):
                 msg_no_task(chat)
             else:
                 define_message_duplicate(msg, chat)
 
         elif command == '/delete':
-            if check_msg_exists(msg):
+            if check_msg_not_exists(msg):
                 msg_no_task(chat)
             else:
                 task_id = int(msg)
@@ -257,7 +257,7 @@ def handle_updates(updates):
                 send_message(set_command_text(command).format(task_id), chat)
 
         elif command == '/todo':
-            if check_msg_exists(msg):
+            if check_msg_not_exists(msg):
                 msg_no_task(chat)
             else:
                 task_id = int(msg)
@@ -272,7 +272,7 @@ def handle_updates(updates):
                 send_message(set_command_text(command).format(task.id, task.name), chat)
 
         elif command == '/doing':
-            if check_msg_exists(msg):
+            if check_msg_not_exists(msg):
                 msg_no_task(chat)
             else:
                 task_id = int(msg)
@@ -287,7 +287,7 @@ def handle_updates(updates):
                 send_message(set_command_text(command).format(task.id, task.name), chat)
 
         elif command == '/done':
-            if check_msg_exists(msg):
+            if check_msg_not_exists(msg):
                 msg_no_task(chat)
             else:
                 task_id = int(msg)
@@ -325,36 +325,36 @@ def handle_updates(updates):
             query = db.session.query(Task).filter_by(status='TODO', chat=chat).order_by(Task.id)
             a += '\n\U0001F195 *TODO*\n'
             for task in query.all():
-                a += '[[{}]] {}\n'.format(task.id, task.name)
+                a += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
             query = db.session.query(Task).filter_by(status='DOING', chat=chat).order_by(Task.id)
-            a += '\n\U000023FA *DOING*\n'
+            a += '\n\U0001F563 *DOING*\n'
             for task in query.all():
-                a += '[[{}]] {}\n'.format(task.id, task.name)
+                a += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
             query = db.session.query(Task).filter_by(status='DONE', chat=chat).order_by(Task.id)
             a += '\n\U00002611 *DONE*\n'
 
             for task in query.all():
-                a += '[[{}]] {}\n'.format(task.id, task.name)
+                a += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
             query = db.session.query(Task).filter_by(priority='high', chat=chat).order_by(Task.id)
             a += '\n\U0001F6A8 *PRIORITY*\n'
             a += '\U0001F198 high priority\n'
 
             for task in query.all():
-                a += '[[{}]] {}\n'.format(task.id, task.name)
+                a += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
             query = db.session.query(Task).filter_by(priority='medium', chat=chat).order_by(Task.id)
-            a += '\U0001F198 medium priority\n'
+            a += '\u203C medium priority\n'
 
 
             for task in query.all():
-                a += '[[{}]] {}\n'.format(task.id, task.name)
+                a += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
             query = db.session.query(Task).filter_by(priority='low', chat=chat).order_by(Task.id)
-            a += '\U0001F198 low priority\n'
+            a += '\u2757 low priority\n'
 
 
 
 
             for task in query.all():
-                a += '[[{}]] {}\n'.format(task.id, task.name)
+                a += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
 
             send_message(a, chat)
         elif command == '/dependson':
@@ -364,7 +364,7 @@ def handle_updates(updates):
                     text = msg.split(' ', 1)[1]
                 msg = msg.split(' ', 1)[0]
 
-            if check_msg_exists(msg):
+            if check_msg_not_exists(msg):
                 msg_no_task(chat)
             else:
                 task_id = int(msg)
@@ -397,7 +397,6 @@ def handle_updates(updates):
                             except sqlalchemy.orm.exc.NoResultFound:
                                 send_message("_404_ Task {} not found x.x".format(depid), chat)
                                 continue
-
                             deplist = task.dependencies.split(',')
                             if str(depid) not in deplist:
                                 task.dependencies += str(depid) + ','
@@ -411,7 +410,7 @@ def handle_updates(updates):
                     text = msg.split(' ', 1)[1]
                 msg = msg.split(' ', 1)[0]
 
-            if check_msg_exists(msg):
+            if check_msg_not_exists(msg):
                 msg_no_task(chat)
             else:
                 task_id = int(msg)
