@@ -393,7 +393,12 @@ def handle_updates(updates):
                             query = db.session.query(Task).filter_by(id=depid, chat=chat)
                             try:
                                 taskdep = query.one()
-                                taskdep.parents += str(task.id) + ','
+                                list_dependencies = taskdep.dependencies.split(',')
+                                if not str(task.id) in list_dependencies:
+                                    taskdep.parents += str(task.id) + ','
+                                else:
+                                    send_message("Essa tarefa já é filha da sub tarefa", chat)
+                                    break
                             except sqlalchemy.orm.exc.NoResultFound:
                                 send_message("_404_ Task {} not found x.x".format(depid), chat)
                                 continue
