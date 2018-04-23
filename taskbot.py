@@ -408,6 +408,40 @@ def handle_updates(updates):
 
                 db.session.commit()
                 send_message(set_command_text(command).format(task_id), chat)
+
+        elif command == '/duedate':
+            text = ''
+            if msg != '':
+                if len(msg.split(' ', 1)) > 1:
+                    text = msg.split(' ', 1)[1]
+                msg = msg.split(' ', 1)[0]
+            if check_msg_not_exists(msg):
+                msg_no_task(chat)
+            else:
+                task_id = int(msg)
+                query = db.session.query(Task).filter_by(id=task_id, chat=chat)
+                try:
+                    task = query.one()
+                except sqlalchemy.orm.exc.NoResultFound:
+                    send_message("_404_ Task {} not found x.x".format(task_id), chat)
+                    return
+
+                if text == '':
+                    task.duedate = ''
+                    send_message("_Cleared_ all duedates from task {}".format(task_id), chat)
+                else:
+                    try:
+                        if parser.parse(text, dayfirst=True):#pattern dd/mm/aaaa
+                            task.duedate = parser.parse(text, dayfirst=True)
+                        # else:
+                        #     send_message("The duedate *must follow* the pattern: dd/mm/aaaa", chat)
+                        #     break
+                    except:
+                        send_message("The duedate *must follow* the pattern: dd/mm/aaaa", chat)
+                        return
+                    send_message("*Task {}* duedate: *{}*".format(task_id, text.lower()), chat)
+                db.session.commit()
+
         elif command == '/priority':
             text = ''
             if msg != '':
