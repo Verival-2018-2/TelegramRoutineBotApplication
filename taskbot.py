@@ -112,7 +112,7 @@ class Bot():
             elif dep.status == 'DONE':
                 icon = '\U00002611'
 
-            if i + 1 == len(self.task.dependencies.split(',')[:-1]):
+            if i + 1 == len(task.dependencies.split(',')[:-1]):
                 line += '└── [[{}]] {} {}\n'.format(dep.id, icon, dep.name)
                 line += self.deps_text(dep, chat, preceed + '    ')
             else:
