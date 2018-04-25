@@ -122,34 +122,6 @@ class Bot():
             text += line
         return text
 
-    def set_command_text(self, command):
-        if command == '/new':
-            text = 'New task *TODO* [[{}]] {}'
-        elif command == '/rename':
-            text = "You want to modify task {},\\\
-                    but you didn't provide any new text"
-        elif command == '/duplicate':
-            text = 'New task *TODO* [[{}]] {}'
-        elif command == '/delete':
-            text = 'Task [[{}]] deleted'
-        elif command == '/todo':
-            text = '*TODO* task [[{}]] {}'
-        elif command == '/doing':
-            text = '*DOING* task [[{}]] {}'
-        elif command == '/done':
-            text = '*DONE* task [[{}]] {}'
-        elif command == '/dependson':
-            text = 'Task {} dependencies up to date'
-        elif command == '/priority':
-            text = '*Task {}* priority has priority *{}*'
-        elif command == '/start':
-            text = 'Welcome! Here is a list of things you can do.'
-        elif command == '/help':
-            text = 'Here is a list of things you can do.'
-        # elif command == '/list' #fazer método para setar list
-            # text = 'metodo para lista'
-        return text
-
     def check_msg_not_exists(self, msg):
         if not msg.isdigit():
             return True
@@ -162,7 +134,8 @@ class Bot():
                     dependencies='', parents='', priority='')
         db.session.add(task)
         db.session.commit()
-        self.send_message(self.set_command_text(command)\
+        text_message = 'New task *TODO* [[{}]] {}'
+        self.send_message(text_message\
                     .format(task.id, task.name), chat)
         # self.make_github_issue(task.name, 'Task of ID:[[{}]].\n\\\
                                     #   Name of task:{}\n'\
@@ -189,15 +162,18 @@ class Bot():
                 return
 
             if text == '':
-                self.send_message("You want to modify task {},\\\
-                              but you didn't provide any new text"\
+                text_message = ("You want to modify task {}," 
+                    " but you didn't provide any new text")
+                self.send_message(text_message\
                               .format(task_id), chat)
                 return
 
             old_text = task.name
             task.name = text
             db.session.commit()
-            self.send_message(self.set_command_text(command)\
+            text_message = ("You want to modify task {}," 
+                    " but you didn't provide any new text")
+            self.send_message(text_message\
                          .format(task_id, old_text, text), chat)
 
     def duplicate(self, command, msg, chat):
@@ -223,7 +199,8 @@ class Bot():
                 t = qy.one()
                 t.parents += '{},'.format(dtask.id)
             db.session.commit()
-            self.send_message(self.set_command_text(command)\
+            text_message = 'New task *TODO* [[{}]] {}'
+            self.send_message(text_message\
                         .format(dtask.id, dtask.name), chat)
 
 
@@ -248,8 +225,10 @@ class Bot():
                             .replace('{},'.format(task.id), '')
             db.session.delete(task)
             db.session.commit()
-            self.send_message(self.set_command_text(command)\
+            text_message = 'Task [[{}]] deleted'
+            self.send_message(text_message\
                          .format(task_id), chat)
+
     def todo(self, command, msg, chat):
         if self.check_msg_not_exists(msg):
             self.msg_no_task(chat)
@@ -265,7 +244,8 @@ class Bot():
                 return
             task.status = 'TODO'
             db.session.commit()
-            self.send_message(self.set_command_text(command)\
+            text_message = '*TODO* task [[{}]] {}'
+            self.send_message(text_message\
                          .format(task.id, task.name), chat)
 
     def doing(self, command, msg, chat):
@@ -283,7 +263,8 @@ class Bot():
                 return
             task.status = 'DOING'
             db.session.commit()
-            self.send_message(self.set_command_text(command)\
+            text_message = '*DOING* task [[{}]] {}'
+            self.send_message(text_message\
                          .format(task.id, task.name), chat)
 
     def done(self, command, msg, chat):
@@ -301,7 +282,8 @@ class Bot():
                 return
             task.status = 'DONE'
             db.session.commit()
-            self.send_message(self.set_command_text(command)\
+            text_message = '*DONE* task [[{}]] {}'
+            self.send_message(text_message\
                          .format(task.id, task.name), chat)
 
     def list(self, command, msg, chat):
@@ -434,7 +416,8 @@ class Bot():
                             task.dependencies += str(depid) + ','
 
             db.session.commit()
-            self.send_message(self.set_command_text(command)\
+            text_message = 'Task {} dependencies up to date'
+            self.send_message(text_message\
                          .format(task_id), chat)
 
     def priority(self, command, msg, chat):
@@ -525,7 +508,7 @@ class Bot():
                 self.send_message("Welcome! Here is a list of things you can do."\
                              , chat)
                 self.send_message(self.HELP, chat)
-                
+
             elif command == '/help':
                 self.send_message("Here is a list of things you can do.", chat)
                 self.send_message(self.HELP, chat)
