@@ -31,6 +31,7 @@ class Bot():
                     /priority ID PRIORITY{low, medium, high}
                     /help
                     """
+    new_task = Task()
 
     def get_infos_file(self, input_file, set_password=False):
         home = str(Path.home())
@@ -97,14 +98,14 @@ class Bot():
 
     def deps_text(self, task, chat, preceed=''):
         text = ''
-
         for i in range(len(task.dependencies.split(',')[:-1])):
             line = preceed
             query = db.session.query(Task)\
                                      .filter_by(id=int(task.dependencies\
                                                 .split(',')[:-1][i]),\
                                                 chat=chat)
-            dep = query.one()
+            dep = self.query_one(int(task.dependencies\
+                                     .split(',')[:-1][i]), chat)
 
             icon = '\U0001F195'
             if dep.status == 'DOING':
@@ -129,6 +130,20 @@ class Bot():
     def msg_no_task(self, chat):
         self.send_message("You must inform the task id", chat)
 
+class HandleTask(Bot):
+    def __init__(self):
+        Bot.__init__(self)
+
+    def query_one(self, task_id, chat):
+        query = db.session.query(Task).filter_by(id=task_id,
+                                                 chat=chat)
+        task = query.one()
+        return task
+
+    def task_not_found_msg(self, task_id, chat):
+        self.send_message("_404_ Task {} not found x.x"\
+                     .format(task_id), chat)
+
     def new_task(self, command, msg, chat):
         task = Task(chat=chat, name=msg, status='TODO',
                     dependencies='', parents='', priority='')
@@ -137,6 +152,7 @@ class Bot():
         text_message = 'New task *TODO* [[{}]] {}'
         self.send_message(text_message\
                     .format(task.id, task.name), chat)
+        # comentado para não abrir issues no repositório
         # self.make_github_issue(task.name, 'Task of ID:[[{}]].\n\\\
                                     #   Name of task:{}\n'\
                                     #   .format(task.id, task.name))
@@ -155,14 +171,13 @@ class Bot():
             query = db.session.query(Task).filter_by(id=task_id,
                                                      chat=chat)
             try:
-                task = query.one()
+                task = self.query_one(task_id, chat)
             except sqlalchemy.orm.exc.NoResultFound:
-                self.send_message("_404_ Task {} not found x.x"\
-                             .format(task_id), chat)
+                self.task_not_found_msg(task_id, chat)
                 return
 
             if text == '':
-                text_message = ("You want to modify task {}," 
+                text_message = ("You want to modify task {},"
                     " but you didn't provide any new text")
                 self.send_message(text_message\
                               .format(task_id), chat)
@@ -171,7 +186,7 @@ class Bot():
             old_text = task.name
             task.name = text
             db.session.commit()
-            text_message = ("You want to modify task {}," 
+            text_message = ("You want to modify task {},"
                     " but you didn't provide any new text")
             self.send_message(text_message\
                          .format(task_id, old_text, text), chat)
@@ -183,11 +198,11 @@ class Bot():
             task_id = int(msg)
             query = db.session.query(Task).filter_by(id=task_id, chat=chat)
             try:
-                task = query.one()
+                task = self.query_one(task_id, chat)
             except sqlalchemy.orm.exc.NoResultFound:
-                self.send_message("_404_ Task {} not found x.x".format(task_id),
-                                                                  self.chat)
+                self.task_not_found_msg(task_id, chat)
                 return
+
 
             dtask = Task(chat=task.chat, name=task.name, status=task.status,
                          dependencies=task.dependencies, parents=task.parents,
@@ -195,7 +210,7 @@ class Bot():
             db.session.add(dtask)
 
             for t in task.dependencies.split(',')[:-1]:
-                qy = db.session.query(Task).filter_by(id=int(t), chat=self.chat)
+                qy = db.session.query(Task).filter_by(id=int(t), chat=chat)
                 t = qy.one()
                 t.parents += '{},'.format(dtask.id)
             db.session.commit()
@@ -212,11 +227,11 @@ class Bot():
             query = db.session.query(Task)\
                                      .filter_by(id=task_id, chat=chat)
             try:
-                task = query.one()
+                task = self.query_one(task_id, chat)
             except sqlalchemy.orm.exc.NoResultFound:
-                self.send_message("_404_ Task {} not found x.x"\
-                             .format(task_id), chat)
+                self.task_not_found_msg(task_id, chat)
                 return
+
             for t in task.dependencies.split(',')[:-1]:
                 qy = db.session.query(Task)\
                                       .filter_by(id=int(t), chat=chat)
@@ -237,10 +252,9 @@ class Bot():
             query = db.session.query(Task)\
                                     .filter_by(id=task_id, chat=chat)
             try:
-                task = query.one()
+                task = self.query_one(task_id, chat)
             except sqlalchemy.orm.exc.NoResultFound:
-                self.send_message("_404_ Task {} not found x.x"\
-                             .format(task_id), chat)
+                self.task_not_found_msg(task_id, chat)
                 return
             task.status = 'TODO'
             db.session.commit()
@@ -256,10 +270,9 @@ class Bot():
             query = db.session.query(Task)\
                                      .filter_by(id=task_id, chat=chat)
             try:
-                task = query.one()
+                task = self.query_one(task_id, chat)
             except sqlalchemy.orm.exc.NoResultFound:
-                self.send_message("_404_ Task {} not found x.x"\
-                             .format(task_id), chat)
+                self.task_not_found_msg(task_id, chat)
                 return
             task.status = 'DOING'
             db.session.commit()
@@ -275,11 +288,11 @@ class Bot():
             query = db.session.query(Task)\
                               .filter_by(id=task_id, chat=chat)
             try:
-                task = query.one()
+                task = self.query_one(task_id, chat)
             except sqlalchemy.orm.exc.NoResultFound:
-                self.send_message("_404_ Task {} not found x.x"\
-                             .format(task_id), chat)
+                self.task_not_found_msg(task_id, chat)
                 return
+
             task.status = 'DONE'
             db.session.commit()
             text_message = '*DONE* task [[{}]] {}'
@@ -368,11 +381,11 @@ class Bot():
             query = db.session.query(Task).filter_by(id=task_id,\
                                                      chat=chat)
             try:
-                task = query.one()
+                task = self.query_one(task_id, chat)
             except sqlalchemy.orm.exc.NoResultFound:
-                self.send_message("_404_ Task {} not found x.x"\
-                             .format(task_id), chat)
+                self.task_not_found_msg(task_id, chat)
                 return
+
 
             if text == '':
                 for i in task.dependencies.split(',')[:-1]:
@@ -398,7 +411,7 @@ class Bot():
                                                  .filter_by(id=depid,\
                                                  chat=chat)
                         try:
-                            taskdep = query.one()
+                            taskdep = self.query_one(depid, chat)
                             list_dependencies = taskdep.dependencies\
                                                        .split(',')
                             if not str(task.id) in list_dependencies:
@@ -434,11 +447,11 @@ class Bot():
             query = db.session.query(Task)\
                                      .filter_by(id=task_id, chat=chat)
             try:
-                task = query.one()
+                task = self.query_one(task_id, chat)
             except sqlalchemy.orm.exc.NoResultFound:
-                self.send_message("_404_ Task {} not found x.x"\
-                             .format(task_id), chat)
+                self.task_not_found_msg(task_id, chat)
                 return
+
 
             if text == '':
                 task.priority = ''
@@ -516,9 +529,11 @@ class Bot():
                 self.send_message("I'm sorry dave. I'm afraid I can't do that."\
                              , chat)
 
+
+
 def main():
     last_update_id = None
-    a = Bot()
+    a = HandleTask()
     while True:
         print("Updates")
         updates = a.get_updates(last_update_id)
