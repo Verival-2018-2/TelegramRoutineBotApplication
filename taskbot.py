@@ -31,7 +31,8 @@ class Bot():
                     /priority ID PRIORITY{low, medium, high}
                     /help
                     """
-    new_task = Task()
+
+    # new_task = Task()
 
     def get_infos_file(self, input_file, set_password=False):
         home = str(Path.home())
@@ -118,7 +119,7 @@ class Bot():
                 line += self.deps_text(dep, chat, preceed + '    ')
             else:
                 line += '├── [[{}]] {} {}\n'.format(dep.id, icon, dep.name)
-                line += self.deps_text(dep, self.chat, self.preceed + '│   ')
+                line += self.deps_text(dep, chat, preceed + '│   ')
 
             text += line
         return text
@@ -131,8 +132,10 @@ class Bot():
         self.send_message("You must inform the task id", chat)
 
 class HandleTask(Bot):
+
     def __init__(self):
         Bot.__init__(self)
+        self.text = ''
 
     def query_one(self, task_id, chat):
         query = db.session.query(Task).filter_by(id=task_id,
@@ -158,10 +161,9 @@ class HandleTask(Bot):
                                     #   .format(task.id, task.name))
 
     def rename(self, command, msg, chat):
-        text = ''
         if msg != '':
             if len(msg.split(' ', 1)) > 1:
-                text = msg.split(' ', 1)[1]
+                self.text = msg.split(' ', 1)[1]
             msg = msg.split(' ', 1)[0]
 
         if self.check_msg_not_exists(msg):
@@ -176,7 +178,7 @@ class HandleTask(Bot):
                 self.task_not_found_msg(task_id, chat)
                 return
 
-            if text == '':
+            if self.text == '':
                 text_message = ("You want to modify task {},"
                     " but you didn't provide any new text")
                 self.send_message(text_message\
@@ -184,12 +186,12 @@ class HandleTask(Bot):
                 return
 
             old_text = task.name
-            task.name = text
+            task.name = self.text
             db.session.commit()
             text_message = ("You want to modify task {},"
                     " but you didn't provide any new text")
             self.send_message(text_message\
-                         .format(task_id, old_text, text), chat)
+                         .format(task_id, old_text, self.text), chat)
 
     def duplicate(self, command, msg, chat):
         if self.check_msg_not_exists(msg):
@@ -300,9 +302,9 @@ class HandleTask(Bot):
                          .format(task.id, task.name), chat)
 
     def list(self, command, msg, chat):
-        a = ''
+        msg_user = ''
 
-        a += '\U0001F4CB Task List\n'
+        msg_user += '\U0001F4CB Task List\n'
         query = db.session.query(Task)\
                                 .filter_by(parents='',\
                                            chat=chat).order_by(Task.id)
@@ -315,63 +317,62 @@ class HandleTask(Bot):
             elif task.priority == 'priority':
                 icon = 'u"\U0001F6A8"'
 
-            a += '[[{}]] {} {}\n'.format(task.id, icon, task.name)
-            a += self.deps_text(task, chat)
+            msg_user += '[[{}]] {} {}\n'.format(task.id, icon, task.name)
+            msg_user += self.deps_text(task, chat)
 
-        self.send_message(a, chat)
-        a = ''
+        self.send_message(msg_user, chat)
+        msg_user = ''
 
-        a += '\U0001F4DD _Status_\n'
+        msg_user += '\U0001F4DD _Status_\n'
         query = db.session.query(Task)\
                                  .filter_by(status='TODO', chat=chat)\
                                  .order_by(Task.id)
-        a += '\n\U0001F195 *TODO*\n'
+        msg_user += '\n\U0001F195 *TODO*\n'
         for task in query.all():
-            a += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
+            msg_user += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
         query = db.session.query(Task)\
                                  .filter_by(status='DOING', chat=chat)\
                                  .order_by(Task.id)
-        a += '\n\U0001F563 *DOING*\n'
+        msg_user += '\n\U0001F563 *DOING*\n'
         for task in query.all():
-            a += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
+            msg_user += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
         query = db.session.query(Task)\
                                  .filter_by(status='DONE', chat=chat)\
                                  .order_by(Task.id)
-        a += '\n\U00002611 *DONE*\n'
+        msg_user += '\n\U00002611 *DONE*\n'
 
         for task in query.all():
-            a += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
+            msg_user += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
         query = db.session.query(Task)\
                                  .filter_by(priority='high', chat=chat)\
                                  .order_by(Task.id)
-        a += '\n\U0001F6A8 *PRIORITY*\n'
-        a += '\U0001F198 high priority\n'
+        msg_user += '\n\U0001F6A8 *PRIORITY*\n'
+        msg_user += '\U0001F198 high priority\n'
 
         for task in query.all():
-            a += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
+            msg_user += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
         query = db.session.query(Task)\
                                  .filter_by(priority='medium',\
                                  chat=chat).order_by(Task.id)
-        a += '\u203C medium priority\n'
+        msg_user += '\u203C medium priority\n'
 
 
         for task in query.all():
-            a += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
+            msg_user += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
         query = db.session.query(Task)\
                                  .filter_by(priority='low', chat=chat)\
                                  .order_by(Task.id)
-        a += '\u2757 low priority\n'
+        msg_user += '\u2757 low priority\n'
 
         for task in query.all():
-            a += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
+            msg_user += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
 
-        self.send_message(a, chat)
+        self.send_message(msg_user, chat)
 
     def dependson(self, command, msg, chat):
-        text = ''
         if msg != '':
             if len(msg.split(' ', 1)) > 1:
-                text = msg.split(' ', 1)[1]
+                self.text = msg.split(' ', 1)[1]
             msg = msg.split(' ', 1)[0]
 
         if self.check_msg_not_exists(msg):
@@ -387,7 +388,7 @@ class HandleTask(Bot):
                 return
 
 
-            if text == '':
+            if self.text == '':
                 for i in task.dependencies.split(',')[:-1]:
                     i = int(i)
                     q = db.session.query(Task).filter_by(id=i,\
@@ -400,7 +401,7 @@ class HandleTask(Bot):
                 self.send_message("Dependencies removed from task {}"\
                              .format(task_id), chat)
             else:
-                for depid in text.split(' '):
+                for depid in self.text.split(' '):
                     if not depid.isdigit():
                         self.send_message("All dependencies ids must be\\\
                                       numeric, and not {}"\
@@ -434,10 +435,9 @@ class HandleTask(Bot):
                          .format(task_id), chat)
 
     def priority(self, command, msg, chat):
-        text = ''
         if msg != '':
             if len(msg.split(' ', 1)) > 1:
-                text = msg.split(' ', 1)[1]
+                self.text = msg.split(' ', 1)[1]
             msg = msg.split(' ', 1)[0]
 
         if self.check_msg_not_exists(msg):
@@ -453,18 +453,18 @@ class HandleTask(Bot):
                 return
 
 
-            if text == '':
+            if self.text == '':
                 task.priority = ''
                 self.send_message("_Cleared_ all priorities from task {}"\
                              .format(task_id), chat)
             else:
-                if text.lower() not in ['high', 'medium', 'low']:
+                if self.text.lower() not in ['high', 'medium', 'low']:
                     self.send_message("The priority *must be* one of the\\\
                                  following: high, medium, low", chat)
                 else:
-                    task.priority = text.lower()
+                    task.priority = self.text.lower()
                     self.send_message("*Task {}* priority has priority\\\
-                                 *{}*".format(task_id, text.lower()),\
+                                 *{}*".format(task_id, self.text.lower()),\
                                  chat)
             db.session.commit()
 
@@ -518,12 +518,12 @@ class HandleTask(Bot):
                 self.priority(command, msg, chat)
 
             elif command == '/start':
-                self.send_message("Welcome! Here is a list of things you can do."\
+                self.send_message("Welcome! Here is msg_user list of things you can do."\
                              , chat)
                 self.send_message(self.HELP, chat)
 
             elif command == '/help':
-                self.send_message("Here is a list of things you can do.", chat)
+                self.send_message("Here is msg_user list of things you can do.", chat)
                 self.send_message(self.HELP, chat)
             else:
                 self.send_message("I'm sorry dave. I'm afraid I can't do that."\
@@ -533,14 +533,14 @@ class HandleTask(Bot):
 
 def main():
     last_update_id = None
-    a = HandleTask()
+    task = HandleTask()
     while True:
         print("Updates")
-        updates = a.get_updates(last_update_id)
+        updates = task.get_updates(last_update_id)
 
         if len(updates["result"]) > 0:
-            last_update_id = a.get_last_update_id(updates) + 1
-            a.handle_updates(updates)
+            last_update_id = task.get_last_update_id(updates) + 1
+            task.handle_updates(updates)
 
         time.sleep(0.5)
 
