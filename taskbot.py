@@ -105,8 +105,9 @@ class Bot():
                                      .filter_by(id=int(task.dependencies\
                                                 .split(',')[:-1][i]),\
                                                 chat=chat)
-            dep = self.query_one(int(task.dependencies\
-                                     .split(',')[:-1][i]), chat)
+            # dep = self.query_one(int(task.dependencies\
+            #                          .split(',')[:-1][i]), chat)
+            dep = query.one()
 
             icon = '\U0001F195'
             if dep.status == 'DOING':
@@ -124,18 +125,13 @@ class Bot():
             text += line
         return text
 
-    def check_msg_not_exists(self, msg):
-        if not msg.isdigit():
-            return True
-
-    def msg_no_task(self, chat):
-        self.send_message("You must inform the task id", chat)
 
 class HandleTask(Bot):
 
+    text = ''
+
     def __init__(self):
         Bot.__init__(self)
-        self.text = ''
 
     def query_one(self, task_id, chat):
         query = db.session.query(Task).filter_by(id=task_id,
@@ -146,6 +142,13 @@ class HandleTask(Bot):
     def task_not_found_msg(self, task_id, chat):
         self.send_message("_404_ Task {} not found x.x"\
                      .format(task_id), chat)
+
+    def check_msg_not_exists(self, msg):
+        if not msg.isdigit():
+            return True
+
+    def msg_no_task(self, chat):
+        self.send_message("You must inform the task id", chat)
 
     def new_task(self, command, msg, chat):
         task = Task(chat=chat, name=msg, status='TODO',
@@ -160,11 +163,22 @@ class HandleTask(Bot):
                                     #   Name of task:{}\n'\
                                     #   .format(task.id, task.name))
 
-    def rename(self, command, msg, chat):
+    def condition_test(self, msg):
+        if len(msg.split(' ', 1)) > 1:
+            return True
+
+    def split_msg(self, msg, element):
+        return msg.split(' ', 1)[element]
+
+    def msg_not_empty(self, msg):
         if msg != '':
-            if len(msg.split(' ', 1)) > 1:
-                self.text = msg.split(' ', 1)[1]
-            msg = msg.split(' ', 1)[0]
+            return True
+
+    def rename(self, command, msg, chat):
+        if self.msg_not_empty(msg):
+            if self.condition_test(msg):
+                self.text = self.split_msg(msg, 1)
+            msg = self.split_msg(msg, 0)
 
         if self.check_msg_not_exists(msg):
             self.msg_no_task(chat)
@@ -206,19 +220,21 @@ class HandleTask(Bot):
                 return
 
 
-            dtask = Task(chat=task.chat, name=task.name, status=task.status,
+            dep_task = Task(chat=task.chat, name=task.name, status=task.status,
                          dependencies=task.dependencies, parents=task.parents,
                          priority=task.priority, duedate=task.duedate)
-            db.session.add(dtask)
+            db.session.add(dep_task)
 
             for t in task.dependencies.split(',')[:-1]:
-                qy = db.session.query(Task).filter_by(id=int(t), chat=chat)
-                t = qy.one()
-                t.parents += '{},'.format(dtask.id)
+                query_dep = db.session.query(Task).\
+                                            filter_by(id=int(t),\
+                                                      chat=chat)
+                t = query_dep.one()
+                t.parents += '{},'.format(dep_task.id)
             db.session.commit()
             text_message = 'New task *TODO* [[{}]] {}'
             self.send_message(text_message\
-                        .format(dtask.id, dtask.name), chat)
+                        .format(dep_task.id, dep_task.name), chat)
 
 
     def delete(self, command, msg, chat):
@@ -235,9 +251,9 @@ class HandleTask(Bot):
                 return
 
             for t in task.dependencies.split(',')[:-1]:
-                qy = db.session.query(Task)\
+                query_dep = db.session.query(Task)\
                                       .filter_by(id=int(t), chat=chat)
-                t = qy.one()
+                t = query_dep.one()
                 t.parents = t.parents\
                             .replace('{},'.format(task.id), '')
             db.session.delete(task)
@@ -370,10 +386,10 @@ class HandleTask(Bot):
         self.send_message(msg_user, chat)
 
     def dependson(self, command, msg, chat):
-        if msg != '':
-            if len(msg.split(' ', 1)) > 1:
-                self.text = msg.split(' ', 1)[1]
-            msg = msg.split(' ', 1)[0]
+        if self.msg_not_empty(msg):
+            if self.condition_test(msg):
+                self.text = self.split_msg(msg, 1)
+            msg = self.split_msg(msg, 0)
 
         if self.check_msg_not_exists(msg):
             self.msg_no_task(chat)
@@ -435,10 +451,10 @@ class HandleTask(Bot):
                          .format(task_id), chat)
 
     def priority(self, command, msg, chat):
-        if msg != '':
-            if len(msg.split(' ', 1)) > 1:
-                self.text = msg.split(' ', 1)[1]
-            msg = msg.split(' ', 1)[0]
+        if self.msg_not_empty(msg):
+            if self.condition_test(msg):
+                self.text = self.split_msg(msg, 1)
+            msg = self.split_msg(msg, 0)
 
         if self.check_msg_not_exists(msg):
             self.msg_no_task(chat)
