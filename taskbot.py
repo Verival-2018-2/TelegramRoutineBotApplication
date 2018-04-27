@@ -127,9 +127,6 @@ class Bot():
 
 
 class HandleTask(Bot):
-
-    text = ''
-
     def __init__(self):
         Bot.__init__(self)
 
@@ -175,9 +172,10 @@ class HandleTask(Bot):
             return True
 
     def rename(self, command, msg, chat):
+        text = ''
         if self.msg_not_empty(msg):
             if self.condition_test(msg):
-                self.text = self.split_msg(msg, 1)
+                text = self.split_msg(msg, 1)
             msg = self.split_msg(msg, 0)
 
         if self.check_msg_not_exists(msg):
@@ -192,7 +190,7 @@ class HandleTask(Bot):
                 self.task_not_found_msg(task_id, chat)
                 return
 
-            if self.text == '':
+            if text == '':
                 text_message = ("You want to modify task {},"
                     " but you didn't provide any new text")
                 self.send_message(text_message\
@@ -200,12 +198,12 @@ class HandleTask(Bot):
                 return
 
             old_text = task.name
-            task.name = self.text
+            task.name = text
             db.session.commit()
             text_message = ("You want to modify task {},"
                     " but you didn't provide any new text")
             self.send_message(text_message\
-                         .format(task_id, old_text, self.text), chat)
+                         .format(task_id, old_text, text), chat)
 
     def duplicate(self, command, msg, chat):
         if self.check_msg_not_exists(msg):
@@ -386,9 +384,10 @@ class HandleTask(Bot):
         self.send_message(msg_user, chat)
 
     def dependson(self, command, msg, chat):
+        text = ''
         if self.msg_not_empty(msg):
             if self.condition_test(msg):
-                self.text = self.split_msg(msg, 1)
+                text = self.split_msg(msg, 1)
             msg = self.split_msg(msg, 0)
 
         if self.check_msg_not_exists(msg):
@@ -404,7 +403,7 @@ class HandleTask(Bot):
                 return
 
 
-            if self.text == '':
+            if text == '':
                 for i in task.dependencies.split(',')[:-1]:
                     i = int(i)
                     q = db.session.query(Task).filter_by(id=i,\
@@ -417,7 +416,7 @@ class HandleTask(Bot):
                 self.send_message("Dependencies removed from task {}"\
                              .format(task_id), chat)
             else:
-                for depid in self.text.split(' '):
+                for depid in text.split(' '):
                     if not depid.isdigit():
                         self.send_message("All dependencies ids must be\\\
                                       numeric, and not {}"\
@@ -451,9 +450,10 @@ class HandleTask(Bot):
                          .format(task_id), chat)
 
     def priority(self, command, msg, chat):
+        text = ''
         if self.msg_not_empty(msg):
             if self.condition_test(msg):
-                self.text = self.split_msg(msg, 1)
+                text = self.split_msg(msg, 1)
             msg = self.split_msg(msg, 0)
 
         if self.check_msg_not_exists(msg):
@@ -469,18 +469,18 @@ class HandleTask(Bot):
                 return
 
 
-            if self.text == '':
+            if text == '':
                 task.priority = ''
                 self.send_message("_Cleared_ all priorities from task {}"\
                              .format(task_id), chat)
             else:
-                if self.text.lower() not in ['high', 'medium', 'low']:
+                if text.lower() not in ['high', 'medium', 'low']:
                     self.send_message("The priority *must be* one of the\\\
                                  following: high, medium, low", chat)
                 else:
-                    task.priority = self.text.lower()
+                    task.priority = text.lower()
                     self.send_message("*Task {}* priority has priority\\\
-                                 *{}*".format(task_id, self.text.lower()),\
+                                 *{}*".format(task_id, text.lower()),\
                                  chat)
             db.session.commit()
 
