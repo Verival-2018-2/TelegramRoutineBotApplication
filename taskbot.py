@@ -251,7 +251,11 @@ class HandleTask(Bot):
             for t in task.dependencies.split(',')[:-1]:
                 query_dep = db.session.query(Task)\
                                       .filter_by(id=int(t), chat=chat)
-                t = query_dep.one()
+                try:
+                    t = query_dep.one()
+                except sqlalchemy.orm.exc.NoResultFound:
+                    self.task_not_found_msg(task_id, chat)
+                    return
                 t.parents = t.parents\
                             .replace('{},'.format(task.id), '')
             db.session.delete(task)
