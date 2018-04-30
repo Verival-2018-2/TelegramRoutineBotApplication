@@ -319,6 +319,25 @@ class HandleTask(Bot):
             self.send_message(text_message\
                          .format(task.id, task.name), chat)
 
+    def task_status(self, status, chat):
+        msg_user = ''
+
+        if status == 'TODO':
+            msg_user += '\n\U0001F195 *TODO*\n'
+        elif status == 'DOING':
+            msg_user += '\n\U0001F563 *DOING*\n'
+        elif status == 'DONE':
+            msg_user += '\n\U00002611 *DONE*\n'
+
+        query = db.session.query(Task)\
+                                 .filter_by(status=status, chat=chat)\
+                                 .order_by(Task.id)
+
+        for task in query.all():
+            msg_user += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
+
+        return msg_user
+
     def list(self, command, msg, chat):
         msg_user = ''
 
@@ -342,25 +361,11 @@ class HandleTask(Bot):
         msg_user = ''
 
         msg_user += '\U0001F4DD _Status_\n'
-        query = db.session.query(Task)\
-                                 .filter_by(status='TODO', chat=chat)\
-                                 .order_by(Task.id)
-        msg_user += '\n\U0001F195 *TODO*\n'
-        for task in query.all():
-            msg_user += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
-        query = db.session.query(Task)\
-                                 .filter_by(status='DOING', chat=chat)\
-                                 .order_by(Task.id)
-        msg_user += '\n\U0001F563 *DOING*\n'
-        for task in query.all():
-            msg_user += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
-        query = db.session.query(Task)\
-                                 .filter_by(status='DONE', chat=chat)\
-                                 .order_by(Task.id)
-        msg_user += '\n\U00002611 *DONE*\n'
 
-        for task in query.all():
-            msg_user += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
+        msg_user += self.task_status('TODO', chat)
+        msg_user += self.task_status('DOING', chat)
+        msg_user += self.task_status('DONE', chat)
+
         query = db.session.query(Task)\
                                  .filter_by(priority='high', chat=chat)\
                                  .order_by(Task.id)
