@@ -387,6 +387,21 @@ class HandleTask(Bot):
 
         self.send_message(msg_user, chat)
 
+    def search_parent(self, task, target, chat):
+        if not task.parents == '':
+            parent_id = task.parents.split(',')
+            parent_id.pop()
+
+            numbers = [ int(id_pai) for id_pai in parent_id ]
+
+            if target in numbers:
+                return False
+            else:
+                parent = self.query_one(numbers[0], chat)
+                return self.search_parent(parent, target, chat)
+
+        return True
+
     def dependson(self, command, msg, chat):
         text = ''
         if self.msg_not_empty(msg):
@@ -434,7 +449,8 @@ class HandleTask(Bot):
                             taskdep = self.query_one(depid, chat)
                             list_dependencies = taskdep.dependencies\
                                                        .split(',')
-                            if not str(task.id) in list_dependencies:
+
+                            if self.search_parent(task, taskdep.id, chat):
                                 taskdep.parents += str(task.id) + ','
                             else:
                                 self.send_message("Essa tarefa já é filha\\\
