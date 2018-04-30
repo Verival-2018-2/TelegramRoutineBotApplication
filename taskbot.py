@@ -338,6 +338,25 @@ class HandleTask(Bot):
 
         return msg_user
 
+    def task_priority(self, priority, chat):
+        msg_user = ''
+
+        if priority == 'high':
+            msg_user += '\U0001F198 high priority\n'
+        elif priority == 'medium':
+            msg_user += '\u203C medium priority\n'
+        elif priority == 'low':
+            msg_user += '\u2757 low priority\n'
+
+        query = db.session.query(Task)\
+                                 .filter_by(priority=priority, chat=chat)\
+                                 .order_by(Task.id)
+
+        for task in query.all():
+            msg_user += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
+
+        return msg_user
+
     def list(self, command, msg, chat):
         msg_user = ''
 
@@ -361,34 +380,15 @@ class HandleTask(Bot):
         msg_user = ''
 
         msg_user += '\U0001F4DD _Status_\n'
-
         msg_user += self.task_status('TODO', chat)
         msg_user += self.task_status('DOING', chat)
         msg_user += self.task_status('DONE', chat)
 
-        query = db.session.query(Task)\
-                                 .filter_by(priority='high', chat=chat)\
-                                 .order_by(Task.id)
+
         msg_user += '\n\U0001F6A8 *PRIORITY*\n'
-        msg_user += '\U0001F198 high priority\n'
-
-        for task in query.all():
-            msg_user += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
-        query = db.session.query(Task)\
-                                 .filter_by(priority='medium',\
-                                 chat=chat).order_by(Task.id)
-        msg_user += '\u203C medium priority\n'
-
-
-        for task in query.all():
-            msg_user += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
-        query = db.session.query(Task)\
-                                 .filter_by(priority='low', chat=chat)\
-                                 .order_by(Task.id)
-        msg_user += '\u2757 low priority\n'
-
-        for task in query.all():
-            msg_user += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
+        msg_user += self.task_priority('high', chat)
+        msg_user += self.task_priority('medium', chat)
+        msg_user += self.task_priority('low', chat)
 
         self.send_message(msg_user, chat)
 
