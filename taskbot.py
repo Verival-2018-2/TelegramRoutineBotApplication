@@ -12,32 +12,32 @@ from db import Task
 import os
 import json
 import requests
+from datetime import datetime
 
 
 class Bot():
     def __init__(self):
         self.TOKEN = self.get_infos_file("/token_my_routinebot.txt", False)
         self.URL = "https://api.telegram.org/bot{}/".format(self.TOKEN)
-        self.HELP = """
-                    /new NOME
-                    /todo ID
-                    /doing ID
-                    /done ID
-                    /delete ID
-                    /list
-                    /rename ID NOME
-                    /dependson ID ID...
-                    /duplicate ID
-                    /priority ID PRIORITY{low, medium, high}
-                    /help
-                    """
-
-    # new_task = Task()
+        self.HELP = (
+            "/new NOME\n"
+            "/todo ID\n"
+            "/doing ID\n"
+            "/done ID\n"
+            "/delete ID\n"
+            "/rename ID NOME\n"
+            "/dependson ID ID...\n"
+            "/duplicate ID\n"
+            "/priority ID PRIORITY{low, medium, high}\n"
+            "/duedate ID DATE{dd/mm/aaaa}\n"
+            "/list\n"
+            "/help\n"
+        )
 
     def get_infos_file(self, input_file, set_password=False):
         home = str(Path.home())
         # input_file = "/token_my_routinebot.txt"
-        with open(home + input_file) as infile:
+        with open(home + '/my_routinebot_files' + input_file) as infile:
             if set_password == True:
                 lines = infile.readline()[1:]
             lines = infile.readline()
@@ -49,16 +49,12 @@ class Bot():
 
     def make_github_issue(self, title, body=None):
         '''Create an issue on github.com using the given parameters.'''
-        # Our url to create issues via POST
         url = 'https://api.github.com/repos/TecProg-20181/my_routinebot/issues'
-        # Create an authenticated session to create the issue
         session = requests.Session()
-        session.auth = (get_infos_file("/username_git.txt", False),
-                        get_infos_file("/username_git.txt", True))
-        # Create our issue
+        session.auth = (self.get_infos_file("/username_git.txt", False),
+                        self.get_infos_file("/username_git.txt", True))
         issue = {'title': title,
                  'body': body}
-        # Add the issue to our repository
         r = session.post(url, json.dumps(issue))
         if r.status_code == 201:
             print ('Successfully created Issue {0:s}'.format(title))
@@ -105,8 +101,6 @@ class Bot():
                                      .filter_by(id=int(task.dependencies\
                                                 .split(',')[:-1][i]),\
                                                 chat=chat)
-            # dep = self.query_one(int(task.dependencies\
-            #                          .split(',')[:-1][i]), chat)
             dep = query.one()
 
             icon = '\U0001F195'
@@ -148,17 +142,20 @@ class HandleTask(Bot):
         self.send_message("You must inform the task id", chat)
 
     def new_task(self, command, msg, chat):
-        task = Task(chat=chat, name=msg, status='TODO',
-                    dependencies='', parents='', priority='')
-        db.session.add(task)
-        db.session.commit()
-        text_message = 'New task *TODO* [[{}]] {}'
-        self.send_message(text_message\
-                    .format(task.id, task.name), chat)
-        # comentado para não abrir issues no repositório
-        # self.make_github_issue(task.name, 'Task of ID:[[{}]].\n\\\
-                                    #   Name of task:{}\n'\
-                                    #   .format(task.id, task.name))
+        i = len(msg.split())
+        msg = msg.split()
+        for i in range(i):
+            task = Task(chat=chat, name=''.join(msg[i]), status='TODO',
+                        dependencies='', parents='', priority='')
+            print('\ntask',task)
+            db.session.add(task)
+            db.session.commit()
+            text_message = 'New task *TODO* [[{}]] {}'
+            self.send_message(text_message\
+                        .format(task.id, task.name), chat)
+            self.make_github_issue(task.name, 'Task of ID:[[{}]].\n\
+                                               Name of task:{}'
+                                               .format(task.id, task.name))
 
     def condition_test(self, msg):
         if len(msg.split(' ', 1)) > 1:
@@ -242,11 +239,7 @@ class HandleTask(Bot):
             task_id = int(msg)
             query = db.session.query(Task)\
                                      .filter_by(id=task_id, chat=chat)
-            try:
-                task = self.query_one(task_id, chat)
-            except sqlalchemy.orm.exc.NoResultFound:
-                self.task_not_found_msg(task_id, chat)
-                return
+            task = self.query_one(task_id, chat)
 
             for t in task.dependencies.split(',')[:-1]:
                 query_dep = db.session.query(Task)\
@@ -258,6 +251,29 @@ class HandleTask(Bot):
                     return
                 t.parents = t.parents\
                             .replace('{},'.format(task.id), '')
+
+            if task.parents:
+                for t in task.parents.split(',')[:-1]:
+                    query_par = db.session.query(Task)\
+                                      .filter_by(id=int(t), chat=chat)
+                    try:
+                        t = query_par.one()
+                    except sqlalchemy.orm.exc.NoResultFound:
+                        self.task_not_found_msg(task_id, chat)
+                        return
+
+                    task_dep = t.dependencies.split(',')
+                    task_dep.pop()
+                    if task_dep == None:
+                        task_dep = ''.join(task_dep)
+                    else:
+                        task_dep.remove(str(task_id))
+                        task_dep = ','.join(task_dep)
+                        if len(task_dep) > 0:
+                            task_dep = task_dep + ','
+
+                    t.dependencies = task_dep
+
             db.session.delete(task)
             db.session.commit()
             text_message = 'Task [[{}]] deleted'
@@ -373,7 +389,12 @@ class HandleTask(Bot):
             elif task.priority == 'priority':
                 icon = 'u"\U0001F6A8"'
 
-            msg_user += '[[{}]] {} {}\n'.format(task.id, icon, task.name)
+            if task.duedate:
+                msg_user += "[[{}]] {} {} \U0001F4C6{}\n".format(task.id,\
+                                                            icon, task.name,\
+                                                            task.duedate)
+            else:
+                msg_user += '[[{}]] {} {}\n'.format(task.id, icon, task.name)
             msg_user += self.deps_text(task, chat)
 
         self.send_message(msg_user, chat)
@@ -426,7 +447,6 @@ class HandleTask(Bot):
                 self.task_not_found_msg(task_id, chat)
                 return
 
-
             if text == '':
                 for i in task.dependencies.split(',')[:-1]:
                     i = int(i)
@@ -442,8 +462,8 @@ class HandleTask(Bot):
             else:
                 for depid in text.split(' '):
                     if not depid.isdigit():
-                        self.send_message("All dependencies ids must be\\\
-                                      numeric, and not {}"\
+                        self.send_message("All dependencies ids must be"
+                                      " numeric, and not {}"\
                                       .format(depid), chat)
                     else:
                         depid = int(depid)
@@ -458,12 +478,11 @@ class HandleTask(Bot):
                             if self.search_parent(task, taskdep.id, chat):
                                 taskdep.parents += str(task.id) + ','
                             else:
-                                self.send_message("Essa tarefa já é filha\\\
-                                              da sub tarefa", chat)
+                                self.send_message("Essa tarefa já é filha"
+                                              " da sub tarefa", chat)
                                 break
                         except sqlalchemy.orm.exc.NoResultFound:
-                            self.send_message("_404_ Task {} not found x.x"\
-                                         .format(depid), chat)
+                            self.task_not_found_msg(task_id, chat)
                             continue
                         deplist = task.dependencies.split(',')
                         if str(depid) not in deplist:
@@ -500,13 +519,65 @@ class HandleTask(Bot):
                              .format(task_id), chat)
             else:
                 if text.lower() not in ['high', 'medium', 'low']:
-                    self.send_message("The priority *must be* one of the\\\
-                                 following: high, medium, low", chat)
+                    self.send_message("The priority *must be* one of the"
+                                 " following: high, medium, low", chat)
                 else:
                     task.priority = text.lower()
-                    self.send_message("*Task {}* priority has priority\\\
-                                 *{}*".format(task_id, text.lower()),\
+                    self.send_message("*Task {}* priority has priority"
+                                 " *{}*".format(task_id, text.lower()),\
                                  chat)
+            db.session.commit()
+
+    def correct_date(self, text):
+        try:
+            datetime.strptime(text, '%d/%m/%Y')
+            return True
+        except ValueError:
+            return False
+
+
+    def duedate(self, command, msg, chat):
+        text = ''
+        msg_aux = msg
+        print('\nmsg_aux:',msg_aux)
+        i = len(msg_aux.split())
+        print('i:',i)
+        msg_aux = msg_aux.split()
+        # for i in range(i):
+        msg_final = msg_aux[::2]
+        text_final = msg_aux[1::2]
+        print('msg_final:',msg_final)
+        print('text_final:', text_final)
+
+        if msg != '':
+            if len(msg.split(' ', 1)) > 1:
+                text = msg.split(' ', 1)[1]
+                print('\ntext',text)
+            msg = msg.split(' ', 1)[0]
+            print('\nmsg dps split:',msg)
+        if self.check_msg_not_exists(msg):
+            self.msg_no_task(chat)
+        else:
+            task_id = int(msg)
+            query = db.session.query(Task).filter_by(id=task_id, chat=chat)
+            try:
+                task = query.one()
+            except sqlalchemy.orm.exc.NoResultFound:
+                self.task_not_found_msg(task_id, chat)
+                return
+
+            if text == '':
+                task.duedate = None
+                self.send_message("_Cleared_ all duedates"
+                            " from task {}".format(task_id), chat)
+            else:
+                if not self.correct_date(text):
+                    self.send_message("The duedate *must follow* "
+                                    "the pattern: dd/mm/aaaa", chat)
+                else:
+                    task.duedate = datetime.strptime(text, '%d/%m/%Y')
+                    self.send_message("*Task {}* duedate:"
+                            " *{}*".format(task_id, text.lower()), chat)
             db.session.commit()
 
     def handle_updates(self, updates):
@@ -525,7 +596,6 @@ class HandleTask(Bot):
                 msg = message["text"].split(" ", 1)[1].strip()
 
             chat = message["chat"]["id"]
-
             print(command, msg, chat)
 
             if command == '/new':
@@ -557,6 +627,9 @@ class HandleTask(Bot):
 
             elif command == '/priority':
                 self.priority(command, msg, chat)
+
+            elif command == '/duedate':
+                self.duedate(command, msg, chat)
 
             elif command == '/start':
                 self.send_message("Welcome! Here is msg_user list of things you can do."\
