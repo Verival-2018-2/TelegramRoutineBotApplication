@@ -150,9 +150,8 @@ class HandleTask(Bot):
         """
         Retorna uma nova task e abre uma nova issue no repositório
         """
-        i = len(msg.split())
-        msg = msg.split()
-        for i in range(i):
+        msg = msg.split(',')
+        for i in range(len(msg)):
             task = Task(chat=chat, name=''.join(msg[i]), status='TODO',
                         dependencies='', parents='', priority='')
             print('\ntask',task)
@@ -161,9 +160,9 @@ class HandleTask(Bot):
             text_message = 'New task *TODO* [[{}]] {}'
             self.send_message(text_message\
                         .format(task.id, task.name), chat)
-            self.make_github_issue(task.name, 'Task of ID:[[{}]].\n\
-                                               Name of task:{}'
-                                               .format(task.id, task.name))
+            # self.make_github_issue(task.name, 'Task of ID:[[{}]].\n\
+            #                                    Name of task:{}'
+            #                                    .format(task.id, task.name))
 
     def condition_len_msg(self, msg):
         """
@@ -343,43 +342,47 @@ class HandleTask(Bot):
         """
         Adiciona uma task para o status TODO
         """
-        if self.check_msg_not_exists(msg):
+        if not [s for s in msg if s.isdigit()]:
             self.msg_no_task(chat)
         else:
-            task_id = int(msg)
-            query = db.session.query(Task)\
-                                    .filter_by(id=task_id, chat=chat)
-            try:
-                task = self.query_one(task_id, chat)
-            except sqlalchemy.orm.exc.NoResultFound:
-                self.task_not_found_msg(task_id, chat)
-                return
-            task.status = 'TODO'
-            db.session.commit()
-            text_message = '*TODO* task [[{}]] {}'
-            self.send_message(text_message\
-                         .format(task.id, task.name), chat)
+            msg = msg.split(',')
+            for i in range(len(msg)):
+                task_id = int(''.join(msg[i]))
+                query = db.session.query(Task)\
+                                        .filter_by(id=task_id, chat=chat)
+                try:
+                    task = self.query_one(task_id, chat)
+                except sqlalchemy.orm.exc.NoResultFound:
+                    self.task_not_found_msg(task_id, chat)
+                    return
+                task.status = 'TODO'
+                db.session.commit()
+                text_message = '*TODO* task [[{}]] {}'
+                self.send_message(text_message\
+                             .format(task.id, task.name), chat)
 
     def doing(self, command, msg, chat):
         """
         Adiciona uma task para o status DOING
         """
-        if self.check_msg_not_exists(msg):
+        if not [s for s in msg if s.isdigit()]:
             self.msg_no_task(chat)
         else:
-            task_id = int(msg)
-            query = db.session.query(Task)\
-                                     .filter_by(id=task_id, chat=chat)
-            try:
-                task = self.query_one(task_id, chat)
-            except sqlalchemy.orm.exc.NoResultFound:
-                self.task_not_found_msg(task_id, chat)
-                return
-            task.status = 'DOING'
-            db.session.commit()
-            text_message = '*DOING* task [[{}]] {}'
-            self.send_message(text_message\
-                         .format(task.id, task.name), chat)
+            msg = msg.split(',')
+            for i in range(len(msg)):
+                task_id = int(''.join(msg[i]))
+                query = db.session.query(Task)\
+                                         .filter_by(id=task_id, chat=chat)
+                try:
+                    task = self.query_one(task_id, chat)
+                except sqlalchemy.orm.exc.NoResultFound:
+                    self.task_not_found_msg(task_id, chat)
+                    return
+                task.status = 'DOING'
+                db.session.commit()
+                text_message = '*DOING* task [[{}]] {}'
+                self.send_message(text_message\
+                             .format(task.id, task.name), chat)
 
     def done(self, command, msg, chat):
         """
@@ -388,20 +391,22 @@ class HandleTask(Bot):
         if self.check_msg_not_exists(msg):
             self.msg_no_task(chat)
         else:
-            task_id = int(msg)
-            query = db.session.query(Task)\
-                              .filter_by(id=task_id, chat=chat)
-            try:
-                task = self.query_one(task_id, chat)
-            except sqlalchemy.orm.exc.NoResultFound:
-                self.task_not_found_msg(task_id, chat)
-                return
+            msg = msg.split(',')
+            for i in range(len(msg)):
+                task_id = int(''.join(msg[i]))
+                query = db.session.query(Task)\
+                                  .filter_by(id=task_id, chat=chat)
+                try:
+                    task = self.query_one(task_id, chat)
+                except sqlalchemy.orm.exc.NoResultFound:
+                    self.task_not_found_msg(task_id, chat)
+                    return
 
-            task.status = 'DONE'
-            db.session.commit()
-            text_message = '*DONE* task [[{}]] {}'
-            self.send_message(text_message\
-                         .format(task.id, task.name), chat)
+                task.status = 'DONE'
+                db.session.commit()
+                text_message = '*DONE* task [[{}]] {}'
+                self.send_message(text_message\
+                             .format(task.id, task.name), chat)
 
     def task_status(self, status, chat):
         """
