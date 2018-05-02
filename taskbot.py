@@ -35,8 +35,11 @@ class Bot():
         )
 
     def get_infos_file(self, input_file, set_password=False):
+        """
+        Pega informações como token e identificações do arquivo de acordo
+        com os parametros input_file e set_password
+        """
         home = str(Path.home())
-        # input_file = "/token_my_routinebot.txt"
         with open(home + '/my_routinebot_files' + input_file) as infile:
             if set_password == True:
                 lines = infile.readline()[1:]
@@ -48,7 +51,9 @@ class Bot():
         return info
 
     def make_github_issue(self, title, body=None):
-        '''Create an issue on github.com using the given parameters.'''
+        """
+        Cria nova issue no repositório de acordo com a url
+        """
         url = 'https://api.github.com/repos/TecProg-20181/my_routinebot/issues'
         session = requests.Session()
         session.auth = (self.get_infos_file("/username_git.txt", False),
@@ -63,16 +68,25 @@ class Bot():
             print ('Response:', r.content)
 
     def get_url(self, url):
+        """
+        Retorna a url desejada
+        """
         response = requests.get(url)
         content = response.content.decode("utf8")
         return content
 
     def get_json_from_url(self, url):
+        """
+        Retorna json a partir da url desejada
+        """
         content = self.get_url(url)
         js = json.loads(content)
         return js
 
     def get_updates(self, offset=None):
+        """
+        Retorna updates do bot com timeout = 100
+        """
         url = self.URL + "getUpdates?timeout=100"
         if offset:
             url += "&offset={}".format(offset)
@@ -80,6 +94,9 @@ class Bot():
         return js
 
     def send_message(self, text, chat_id, reply_markup=None):
+        """
+        Retorna mensagem a ser mostrada para o usuário pelo bot
+        """
         text = urllib.parse.quote_plus(text)
         url = self.URL + "sendMessage?text={}&chat_id={}&parse_mode=Markdown"\
                          .format(text, chat_id)
@@ -88,60 +105,51 @@ class Bot():
         self.get_url(url)
 
     def get_last_update_id(self, updates):
+        """
+        Pega id do último update do bot
+        """
         update_ids = []
         for update in updates["result"]:
             update_ids.append(int(update["update_id"]))
         return max(update_ids)
-
-    def deps_text(self, task, chat, preceed=''):
-        text = ''
-        for i in range(len(task.dependencies.split(',')[:-1])):
-            line = preceed
-            query = db.session.query(Task)\
-                                     .filter_by(id=int(task.dependencies\
-                                                .split(',')[:-1][i]),\
-                                                chat=chat)
-            dep = query.one()
-
-            icon = '\U0001F195'
-            if dep.status == 'DOING':
-                icon = '\U000023FA'
-            elif dep.status == 'DONE':
-                icon = '\U00002611'
-
-            if i + 1 == len(task.dependencies.split(',')[:-1]):
-                line += '└── [[{}]] {} {}\n'.format(dep.id, icon, dep.name)
-                line += self.deps_text(dep, chat, preceed + '    ')
-            else:
-                line += '├── [[{}]] {} {}\n'.format(dep.id, icon, dep.name)
-                line += self.deps_text(dep, chat, preceed + '│   ')
-
-            text += line
-        return text
-
 
 class HandleTask(Bot):
     def __init__(self):
         Bot.__init__(self)
 
     def query_one(self, task_id, chat):
+        """
+        Realiza query de uma linha do banco de acordo com seu id
+        """
         query = db.session.query(Task).filter_by(id=task_id,
                                                  chat=chat)
         task = query.one()
         return task
 
     def task_not_found_msg(self, task_id, chat):
+        """
+        Retorna mensagem em que a task não foi encontrada
+        """
         self.send_message("_404_ Task {} not found x.x"\
                      .format(task_id), chat)
 
     def check_msg_not_exists(self, msg):
+        """
+        Retorna True caso a mensagem não for um dígito
+        """
         if not msg.isdigit():
             return True
 
     def msg_no_task(self, chat):
+        """
+        Retorna mensagem pedindo para o usuário informar o id da task
+        """
         self.send_message("You must inform the task id", chat)
 
     def new_task(self, command, msg, chat):
+        """
+        Retorna uma nova task e abre uma nova issue no repositório
+        """
         i = len(msg.split())
         msg = msg.split()
         for i in range(i):
@@ -157,21 +165,33 @@ class HandleTask(Bot):
                                                Name of task:{}'
                                                .format(task.id, task.name))
 
-    def condition_test(self, msg):
+    def condition_len_msg(self, msg):
+        """
+        Retorna true caso o tamanho da mensagem seja maior que uma palavra
+        """
         if len(msg.split(' ', 1)) > 1:
             return True
 
     def split_msg(self, msg, element):
+        """
+        Realiza o split de uma mensagem
+        """
         return msg.split(' ', 1)[element]
 
     def msg_not_empty(self, msg):
+        """
+        Retorna true caso a mensagem não esteja vazia
+        """
         if msg != '':
             return True
 
     def rename(self, command, msg, chat):
+        """
+        Renomeia uma task
+        """
         text = ''
         if self.msg_not_empty(msg):
-            if self.condition_test(msg):
+            if self.condition_len_msg(msg):
                 text = self.split_msg(msg, 1)
             msg = self.split_msg(msg, 0)
 
@@ -197,12 +217,49 @@ class HandleTask(Bot):
             old_text = task.name
             task.name = text
             db.session.commit()
-            text_message = ("You want to modify task {},"
-                    " but you didn't provide any new text")
+            text_message = ("taks {} renamed")
             self.send_message(text_message\
                          .format(task_id, old_text, text), chat)
 
+    def deps_text(self, task, chat, preceed=''):
+        """
+        Retorna texto para tasks com dependência
+        """
+        text = ''
+        for i in range(len(task.dependencies.split(',')[:-1])):
+            line = preceed
+            query = db.session.query(Task)\
+                                     .filter_by(id=int(task.dependencies\
+                                                .split(',')[:-1][i]),\
+                                                chat=chat)
+            dep = query.one()
+
+            icon = '\U0001F195'
+            if dep.status == 'DOING':
+                icon = '\U000023FA'
+            elif dep.status == 'DONE':
+                icon = '\U00002611'
+
+            if i + 1 == len(task.dependencies.split(',')[:-1]):
+                if dep.duedate:
+                    line += '└── [[{}]] {} {} \U0001F4C6{}\n'.format(dep.id, icon, dep.name, dep.duedate) #
+                else:
+                    line += '└── [[{}]] {} {}\n'.format(dep.id, icon, dep.name)
+                line += self.deps_text(dep, chat, preceed + '    ')
+            else:
+                if dep.duedate:
+                    line += '├── [[{}]] {} {} \U0001F4C6{}\n'.format(dep.id, icon, dep.name, dep.duedate) # mais de uma dependencia
+                else:
+                    line += '├── [[{}]] {} {}\n'.format(dep.id, icon, dep.name) # mais de uma dependencia
+                line += self.deps_text(dep, chat, preceed + '│   ')
+
+            text += line
+        return text
+
     def duplicate(self, command, msg, chat):
+        """
+        Duplica uma task
+        """
         if self.check_msg_not_exists(msg):
             self.msg_no_task(chat)
         else:
@@ -231,8 +288,10 @@ class HandleTask(Bot):
             self.send_message(text_message\
                         .format(dep_task.id, dep_task.name), chat)
 
-
     def delete(self, command, msg, chat):
+        """
+        Deleta uma task
+        """
         if self.check_msg_not_exists(msg):
             self.msg_no_task(chat)
         else:
@@ -281,6 +340,9 @@ class HandleTask(Bot):
                          .format(task_id), chat)
 
     def todo(self, command, msg, chat):
+        """
+        Adiciona uma task para o status TODO
+        """
         if self.check_msg_not_exists(msg):
             self.msg_no_task(chat)
         else:
@@ -299,6 +361,9 @@ class HandleTask(Bot):
                          .format(task.id, task.name), chat)
 
     def doing(self, command, msg, chat):
+        """
+        Adiciona uma task para o status DOING
+        """
         if self.check_msg_not_exists(msg):
             self.msg_no_task(chat)
         else:
@@ -317,6 +382,9 @@ class HandleTask(Bot):
                          .format(task.id, task.name), chat)
 
     def done(self, command, msg, chat):
+        """
+        Adiciona uma task para o status DONE
+        """
         if self.check_msg_not_exists(msg):
             self.msg_no_task(chat)
         else:
@@ -336,6 +404,9 @@ class HandleTask(Bot):
                          .format(task.id, task.name), chat)
 
     def task_status(self, status, chat):
+        """
+        Retorna a mensagem informando o status da task ao usuário
+        """
         msg_user = ''
 
         if status == 'TODO':
@@ -355,6 +426,9 @@ class HandleTask(Bot):
         return msg_user
 
     def task_priority(self, priority, chat):
+        """
+        Retorna a mensagem informando a prioridade da task ao usuário
+        """
         msg_user = ''
 
         if priority == 'high':
@@ -374,6 +448,9 @@ class HandleTask(Bot):
         return msg_user
 
     def list(self, command, msg, chat):
+        """
+        Lista todas tasks suas prioridades, status e duedates
+        """
         msg_user = ''
 
         msg_user += '\U0001F4CB Task List\n'
@@ -383,7 +460,7 @@ class HandleTask(Bot):
         for task in query.all():
             icon = '\U0001F195'
             if task.status == 'DOING':
-                icon = '\U000023FA'
+                icon = '\U0001F563'
             elif task.status == 'DONE':
                 icon = '\U00002611'
             elif task.priority == 'priority':
@@ -414,6 +491,9 @@ class HandleTask(Bot):
         self.send_message(msg_user, chat)
 
     def search_parent(self, task, target, chat):
+        """
+        Busca os pais de uma task utilizando recursividade
+        """
         if not task.parents == '':
             parent_id = task.parents.split(',')
             parent_id.pop()
@@ -429,9 +509,12 @@ class HandleTask(Bot):
         return True
 
     def dependson(self, command, msg, chat):
+        """
+        Adiciona dependência a uma task
+        """
         text = ''
         if self.msg_not_empty(msg):
-            if self.condition_test(msg):
+            if self.condition_len_msg(msg):
                 text = self.split_msg(msg, 1)
             msg = self.split_msg(msg, 0)
 
@@ -494,9 +577,12 @@ class HandleTask(Bot):
                          .format(task_id), chat)
 
     def priority(self, command, msg, chat):
+        """
+        Adiciona a prioridade a uma task
+        """
         text = ''
         if self.msg_not_empty(msg):
-            if self.condition_test(msg):
+            if self.condition_len_msg(msg):
                 text = self.split_msg(msg, 1)
             msg = self.split_msg(msg, 0)
 
@@ -529,6 +615,9 @@ class HandleTask(Bot):
             db.session.commit()
 
     def correct_date(self, text):
+        """
+        Retorna True caso o formato de data seja válido, False caso contrário
+        """
         try:
             datetime.strptime(text, '%d/%m/%Y')
             return True
@@ -537,24 +626,15 @@ class HandleTask(Bot):
 
 
     def duedate(self, command, msg, chat):
+        """
+        Define a duedate de uma task
+        """
         text = ''
-        msg_aux = msg
-        print('\nmsg_aux:',msg_aux)
-        i = len(msg_aux.split())
-        print('i:',i)
-        msg_aux = msg_aux.split()
-        # for i in range(i):
-        msg_final = msg_aux[::2]
-        text_final = msg_aux[1::2]
-        print('msg_final:',msg_final)
-        print('text_final:', text_final)
 
         if msg != '':
             if len(msg.split(' ', 1)) > 1:
                 text = msg.split(' ', 1)[1]
-                print('\ntext',text)
             msg = msg.split(' ', 1)[0]
-            print('\nmsg dps split:',msg)
         if self.check_msg_not_exists(msg):
             self.msg_no_task(chat)
         else:
@@ -581,6 +661,9 @@ class HandleTask(Bot):
             db.session.commit()
 
     def handle_updates(self, updates):
+        """
+        Loop em que todas funções do bot são realizadas
+        """
         for update in updates["result"]:
             if 'message' in update:
                 message = update['message']
@@ -646,6 +729,9 @@ class HandleTask(Bot):
 
 
 def main():
+    """
+    Função em que é instanciado o bot
+    """
     last_update_id = None
     task = HandleTask()
     while True:
