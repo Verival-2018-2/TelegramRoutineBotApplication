@@ -150,7 +150,7 @@ class HandleTask(Bot):
         """
         Retorna uma nova task e abre uma nova issue no repositório
         """
-        msg = msg.split(',')
+        msg = [i.strip() for i in msg.split(',')]
         for i in range(len(msg)):
             task = Task(chat=chat, name=''.join(msg[i]), status='TODO',
                         dependencies='', parents='', priority='')
@@ -345,7 +345,7 @@ class HandleTask(Bot):
         if not [s for s in msg if s.isdigit()]:
             self.msg_no_task(chat)
         else:
-            msg = msg.split(',')
+            msg = [i.strip() for i in msg.split(',')]
             for i in range(len(msg)):
                 task_id = int(''.join(msg[i]))
                 query = db.session.query(Task)\
@@ -368,7 +368,7 @@ class HandleTask(Bot):
         if not [s for s in msg if s.isdigit()]:
             self.msg_no_task(chat)
         else:
-            msg = msg.split(',')
+            msg = [i.strip() for i in msg.split(',')]
             for i in range(len(msg)):
                 task_id = int(''.join(msg[i]))
                 query = db.session.query(Task)\
@@ -388,10 +388,10 @@ class HandleTask(Bot):
         """
         Adiciona uma task para o status DONE
         """
-        if self.check_msg_not_exists(msg):
+        if not [s for s in msg if s.isdigit()]:
             self.msg_no_task(chat)
         else:
-            msg = msg.split(',')
+            msg = [i.strip() for i in msg.split(',')]
             for i in range(len(msg)):
                 task_id = int(''.join(msg[i]))
                 query = db.session.query(Task)\
@@ -636,34 +636,40 @@ class HandleTask(Bot):
         """
         text = ''
 
-        if msg != '':
-            if len(msg.split(' ', 1)) > 1:
-                text = msg.split(' ', 1)[1]
-            msg = msg.split(' ', 1)[0]
-        if self.check_msg_not_exists(msg):
-            self.msg_no_task(chat)
-        else:
-            task_id = int(msg)
-            query = db.session.query(Task).filter_by(id=task_id, chat=chat)
-            try:
-                task = query.one()
-            except sqlalchemy.orm.exc.NoResultFound:
-                self.task_not_found_msg(task_id, chat)
-                return
+        msg = [i.strip() for i in msg.split(',')]
+        print('msg',msg)
+        for i in range(len(msg)):
+            if msg is not None:
+                if len(msg[i].split(' ', 1)) > 1:
+                    text = msg[i].split(' ')[1]
+                msg_indice = msg[i].split(' ')[0]
 
-            if text == '':
-                task.duedate = None
-                self.send_message("_Cleared_ all duedates"
-                            " from task {}".format(task_id), chat)
+
+            if not [s for s in msg_indice if s.isdigit()]:
+                self.msg_no_task(chat)
             else:
-                if not self.correct_date(text):
-                    self.send_message("The duedate *must follow* "
-                                    "the pattern: dd/mm/aaaa", chat)
+                task_id = int(msg_indice)
+                print('task_id',task_id)
+                query = db.session.query(Task).filter_by(id=task_id, chat=chat)
+                try:
+                    task = query.one()
+                except sqlalchemy.orm.exc.NoResultFound:
+                    self.task_not_found_msg(task_id, chat)
+                    return
+
+                if text == '':
+                    task.duedate = None
+                    self.send_message("_Cleared_ all duedates"
+                                " from task {}".format(task_id), chat)
                 else:
-                    task.duedate = datetime.strptime(text, '%d/%m/%Y')
-                    self.send_message("*Task {}* duedate:"
-                            " *{}*".format(task_id, text.lower()), chat)
-            db.session.commit()
+                    if not self.correct_date(text):
+                        self.send_message("The duedate *must follow* "
+                                        "the pattern: dd/mm/aaaa", chat)
+                    else:
+                        task.duedate = datetime.strptime(text, '%d/%m/%Y')
+                        self.send_message("*Task {}* duedate:"
+                                " *{}*".format(task_id, text.lower()), chat)
+                db.session.commit()
 
     def handle_updates(self, updates):
         """
