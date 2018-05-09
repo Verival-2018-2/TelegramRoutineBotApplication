@@ -11,6 +11,20 @@ import json
 from datetime import datetime
 from bot import Bot
 
+# Emoji constants
+NEW = '\U0001F195'
+CIRCLE = '\U000023FA'
+CHECK = '\U00002611'
+CALENDAR = '\U0001F4C6'
+CLOCK = '\U0001F563'
+SOS = '\U0001F198'
+LIGHT = '\U0001F6A8'
+MEMO = '\U0001F4DD'
+CLIPBOARD = '\U0001F4CB'
+ARROW = '\u27A1'
+EXCLAMATION_2 = '\u203C'
+EXCLAMATION = '\u2757'
+
 class HandleTask(Bot):
     def __init__(self):
         Bot.__init__(self)
@@ -132,21 +146,21 @@ class HandleTask(Bot):
                                                 chat=chat)
             dep = query.one()
 
-            icon = '\U0001F195'
+            icon = NEW
             if dep.status == 'DOING':
-                icon = '\U000023FA'
+                icon = CIRCLE
             elif dep.status == 'DONE':
-                icon = '\U00002611'
+                icon = CHECK
 
             if i + 1 == len(task.dependencies.split(',')[:-1]):
                 if dep.duedate:
-                    line += '└── [[{}]] {} {} \U0001F4C6{}\n'.format(dep.id, icon, dep.name, dep.duedate) #
+                    line += '└── [[{}]] {} {} {}{}\n'.format(dep.id, icon, dep.name, CALENDAR, dep.duedate) #
                 else:
                     line += '└── [[{}]] {} {}\n'.format(dep.id, icon, dep.name)
                 line += self.deps_text(dep, chat, preceed + '    ')
             else:
                 if dep.duedate:
-                    line += '├── [[{}]] {} {} \U0001F4C6{}\n'.format(dep.id, icon, dep.name, dep.duedate) # mais de uma dependencia
+                    line += '├── [[{}]] {} {} {}{}\n'.format(dep.id, icon, dep.name, CALENDAR, dep.duedate) # mais de uma dependencia
                 else:
                     line += '├── [[{}]] {} {}\n'.format(dep.id, icon, dep.name) # mais de uma dependencia
                 line += self.deps_text(dep, chat, preceed + '│   ')
@@ -323,18 +337,18 @@ class HandleTask(Bot):
         msg_user = ''
 
         if status == 'TODO':
-            msg_user += '\n\U0001F195 *TODO*\n'
+            msg_user += '\n' + NEW + ' *TODO*\n'
         elif status == 'DOING':
-            msg_user += '\n\U0001F563 *DOING*\n'
+            msg_user += '\n' + CLOCK + ' *DOING*\n'
         elif status == 'DONE':
-            msg_user += '\n\U00002611 *DONE*\n'
+            msg_user += '\n' + CHECK + ' *DONE*\n'
 
         query = db.session.query(Task)\
                                  .filter_by(status=status, chat=chat)\
                                  .order_by(Task.id)
 
         for task in query.all():
-            msg_user += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
+            msg_user += '{}[[{}]] {}\n'.format(ARROW, task.id, task.name)
 
         return msg_user
 
@@ -345,18 +359,18 @@ class HandleTask(Bot):
         msg_user = ''
 
         if priority == 'high':
-            msg_user += '\U0001F198 high priority\n'
+            msg_user += SOS + ' high priority\n'
         elif priority == 'medium':
-            msg_user += '\u203C medium priority\n'
+            msg_user += EXCLAMATION_2 + ' medium priority\n'
         elif priority == 'low':
-            msg_user += '\u2757 low priority\n'
+            msg_user += EXCLAMATION + ' low priority\n'
 
         query = db.session.query(Task)\
                                  .filter_by(priority=priority, chat=chat)\
                                  .order_by(Task.id)
 
         for task in query.all():
-            msg_user += '\u27A1[[{}]] {}\n'.format(task.id, task.name)
+            msg_user += '{}[[{}]] {}\n'.format(ARROW, task.id, task.name)
 
         return msg_user
 
@@ -366,22 +380,23 @@ class HandleTask(Bot):
         '''
         msg_user = ''
 
-        msg_user += '\U0001F4CB Task List\n'
+        msg_user += CLIPBOARD + ' Task List\n'
         query = db.session.query(Task)\
                                 .filter_by(parents='',\
                                            chat=chat).order_by(Task.id)
         for task in query.all():
-            icon = '\U0001F195'
+            icon = NEW
             if task.status == 'DOING':
-                icon = '\U0001F563'
+                icon = CLOCK
             elif task.status == 'DONE':
-                icon = '\U00002611'
+                icon = CHECK
             elif task.priority == 'priority':
-                icon = '\U0001F6A8'
+                icon = LIGHT
 
             if task.duedate:
-                msg_user += '[[{}]] {} {} \U0001F4C6{}\n'.format(task.id,\
+                msg_user += '[[{}]] {} {} {}{}\n'.format(task.id,\
                                                             icon, task.name,\
+                                                            CALENDAR,\
                                                             task.duedate)
             else:
                 msg_user += '[[{}]] {} {}\n'.format(task.id, icon, task.name)
@@ -390,13 +405,13 @@ class HandleTask(Bot):
         self.send_message(msg_user, chat)
         msg_user = ''
 
-        msg_user += '\U0001F4DD _Status_\n'
+        msg_user += MEMO + ' _Status_\n'
         msg_user += self.task_status('TODO', chat)
         msg_user += self.task_status('DOING', chat)
         msg_user += self.task_status('DONE', chat)
 
 
-        msg_user += '\n\U0001F6A8 *PRIORITY*\n'
+        msg_user += '\n' + LIGHT + ' *PRIORITY*\n'
         msg_user += self.task_priority('high', chat)
         msg_user += self.task_priority('medium', chat)
         msg_user += self.task_priority('low', chat)
