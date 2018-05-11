@@ -104,9 +104,7 @@ class HandleTask(Bot):
                 self.msg_no_task(chat)
             else:
                 task_id = int(msg_indice)
-#               Não está sendo utilizado
-#               query = db.session.query(Task).filter_by(id=task_id,
-#                                                         chat=chat)
+
                 try:
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
@@ -177,9 +175,7 @@ class HandleTask(Bot):
                 self.msg_no_task(chat)
             else:
                 task_id = int(msg[i])
-#                Não esta sendo utilizado
-#                query = db.session.query(Task).filter_by(id=task_id,
-#                                                          chat=chat)
+
                 try:
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
@@ -215,9 +211,7 @@ class HandleTask(Bot):
                 self.msg_no_task(chat)
             else:
                 task_id = int(msg[i])
-#                Não está sendo utilizado
-#                query = db.session.query(Task).filter_by(id=task_id,
-#                                                        chat=chat)
+
                 try:
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
@@ -271,9 +265,7 @@ class HandleTask(Bot):
                 self.msg_no_task(chat)
             else:
                 task_id = int(msg[i])
-#               Não está sendo utilizado
-#               query = db.session.query(Task).filter_by(id=task_id,
-#                                                         chat=chat)
+
                 try:
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
@@ -295,9 +287,7 @@ class HandleTask(Bot):
                 self.msg_no_task(chat)
             else:
                 task_id = int(msg[i])
-#                Não está sendo utilizado
-#                query = db.session.query(Task).filter_by(id=task_id,
-#                                                         chat=chat)
+
                 try:
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
@@ -319,9 +309,7 @@ class HandleTask(Bot):
                 self.msg_no_task(chat)
             else:
                 task_id = int(msg[i])
-#                Não esta sendo utilizado
-#                query = db.session.query(Task)\
-#                                  .filter_by(id=task_id, chat=chat)
+
                 try:
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
@@ -452,9 +440,7 @@ class HandleTask(Bot):
                 self.msg_no_task(chat)
             else:
                 task_id = int(msg_indice)
-#               Não esta sendo utilizado
-#               query = db.session.query(Task).filter_by(id=task_id,
-#                                                         chat=chat)
+
                 try:
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
@@ -481,9 +467,7 @@ class HandleTask(Bot):
                                               .format(depid), chat)
                         else:
                             depid = int(depid)
-#                           Não está sendo utilizado
-#                           query = db.session.query(Task).filter_by(id=depid,
-#                                                                     chat=chat)
+
                             try:
                                 taskdep = self.query_one(depid, chat)
 
@@ -520,9 +504,7 @@ class HandleTask(Bot):
                 self.msg_no_task(chat)
             else:
                 task_id = int(msg_indice)
-#               Nao esta sendo utilizado
-#               query = db.session.query(Task)
-#                                        .filter_by(id=task_id, chat=chat)
+
                 try:
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
