@@ -1,13 +1,6 @@
-import json
-import requests
-import time
-import urllib
-from pathlib import Path
 import sqlalchemy
 import db
 from db import Task
-import os
-import json
 from datetime import datetime
 from bot import Bot
 
@@ -24,6 +17,7 @@ CLIPBOARD = '\U0001F4CB'
 ARROW = '\u27A1'
 EXCLAMATION_2 = '\u203C'
 EXCLAMATION = '\u2757'
+
 
 class HandleTask(Bot):
     def __init__(self):
@@ -42,8 +36,7 @@ class HandleTask(Bot):
         '''
         Retorna mensagem em que a task não foi encontrada
         '''
-        self.send_message('_404_ Task {} not found x.x'\
-                     .format(task_id), chat)
+        self.send_message('_404_ Task {} not found x.x'.format(task_id), chat)
 
     def check_msg_not_exists(self, msg):
         '''
@@ -66,12 +59,11 @@ class HandleTask(Bot):
         for i in range(len(msg)):
             task = Task(chat=chat, name=''.join(msg[i]), status='TODO',
                         dependencies='', parents='', priority='')
-            print('\ntask',task)
+            print('\ntask', task)
             db.session.add(task)
             db.session.commit()
             text_message = 'New task *TODO* [[{}]] {}'
-            self.send_message(text_message\
-                        .format(task.id, task.name), chat)
+            self.send_message(text_message.format(task.id, task.name), chat)
             # self.make_github_issue(task.name, 'Task of ID:[[{}]].\n\
             #                                    Name of task:{}'
             #                                    .format(task.id, task.name))
@@ -112,8 +104,9 @@ class HandleTask(Bot):
                 self.msg_no_task(chat)
             else:
                 task_id = int(msg_indice)
-                query = db.session.query(Task).filter_by(id=task_id,
-                                                         chat=chat)
+#               Não está sendo utilizado
+#               query = db.session.query(Task).filter_by(id=task_id,
+#                                                         chat=chat)
                 try:
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
@@ -122,16 +115,15 @@ class HandleTask(Bot):
 
                 if text == '':
                     text_message = ('You want to modify task {},'
-                        ' but you didn\t provide any new text')
-                    self.send_message(text_message\
-                                  .format(task_id), chat)
+                                    ' but you didn\t provide any new text')
+                    self.send_message(text_message.format(task_id), chat)
                 else:
                     old_text = task.name
                     task.name = text
                     db.session.commit()
                     text_message = ('taks {} renamed')
-                    self.send_message(text_message\
-                                 .format(task_id, old_text, text), chat)
+                    self.send_message(text_message.format(task_id, old_text,
+                                                          text), chat)
 
     def deps_text(self, task, chat, preceed=''):
         '''
@@ -140,10 +132,10 @@ class HandleTask(Bot):
         text = ''
         for i in range(len(task.dependencies.split(',')[:-1])):
             line = preceed
-            query = db.session.query(Task)\
-                                     .filter_by(id=int(task.dependencies\
-                                                .split(',')[:-1][i]),\
-                                                chat=chat)
+            query = db.session.query(Task).filter_by(id=int(task.dependencies
+                                                            .split(',')
+                                                            [:-1][i]),
+                                                     chat=chat)
             dep = query.one()
 
             icon = NEW
@@ -154,15 +146,22 @@ class HandleTask(Bot):
 
             if i + 1 == len(task.dependencies.split(',')[:-1]):
                 if dep.duedate:
-                    line += '└── [[{}]] {} {} {}{}\n'.format(dep.id, icon, dep.name, CALENDAR, dep.duedate) #
+                    line += '└── [[{}]] {} {} {}{}\n'.format(dep.id, icon,
+                                                             dep.name,
+                                                             CALENDAR,
+                                                             dep.duedate)
                 else:
-                    line += '└── [[{}]] {} {}\n'.format(dep.id, icon, dep.name)
+                    line += '└── [[{}]] {} {}\n'.format(dep.id, icon,
+                                                        dep.name)
                 line += self.deps_text(dep, chat, preceed + '    ')
             else:
                 if dep.duedate:
-                    line += '├── [[{}]] {} {} {}{}\n'.format(dep.id, icon, dep.name, CALENDAR, dep.duedate) # mais de uma dependencia
+                    line += '├── [[{}]] {} {} {}{}\n'.format(dep.id, icon,
+                                                             dep.name,
+                                                             CALENDAR,
+                                                             dep.duedate)
                 else:
-                    line += '├── [[{}]] {} {}\n'.format(dep.id, icon, dep.name) # mais de uma dependencia
+                    line += '├── [[{}]] {} {}\n'.format(dep.id, icon, dep.name)
                 line += self.deps_text(dep, chat, preceed + '│   ')
 
             text += line
@@ -178,30 +177,33 @@ class HandleTask(Bot):
                 self.msg_no_task(chat)
             else:
                 task_id = int(msg[i])
-
-                query = db.session.query(Task).filter_by(id=task_id, chat=chat)
+#                Não esta sendo utilizado
+#                query = db.session.query(Task).filter_by(id=task_id,
+#                                                          chat=chat)
                 try:
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
                     self.task_not_found_msg(task_id, chat)
                     return
 
-
-                dep_task = Task(chat=task.chat, name=task.name, status=task.status,
-                             dependencies=task.dependencies, parents=task.parents,
-                             priority=task.priority, duedate=task.duedate)
+                dep_task = Task(chat=task.chat, name=task.name,
+                                status=task.status,
+                                dependencies=task.dependencies,
+                                parents=task.parents,
+                                priority=task.priority, duedate=task.duedate)
                 db.session.add(dep_task)
 
                 for t in task.dependencies.split(',')[:-1]:
                     query_dep = db.session.query(Task).\
-                                                filter_by(id=int(t),\
+                                                filter_by(id=int(t),
                                                           chat=chat)
                     t = query_dep.one()
                     t.parents += '{},'.format(dep_task.id)
                 db.session.commit()
                 text_message = 'New task *TODO* [[{}]] {}'
-                self.send_message(text_message\
-                            .format(dep_task.id, dep_task.name), chat)
+                self.send_message(text_message.format(dep_task.id,
+                                                      dep_task.name),
+                                  chat)
 
     def delete(self, command, msg, chat):
         '''
@@ -213,8 +215,9 @@ class HandleTask(Bot):
                 self.msg_no_task(chat)
             else:
                 task_id = int(msg[i])
-                query = db.session.query(Task)\
-                                         .filter_by(id=task_id, chat=chat)
+#                Não está sendo utilizado
+#                query = db.session.query(Task).filter_by(id=task_id,
+#                                                        chat=chat)
                 try:
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
@@ -229,8 +232,7 @@ class HandleTask(Bot):
                     except sqlalchemy.orm.exc.NoResultFound:
                         self.task_not_found_msg(task_id, chat)
                         return
-                    t.parents = t.parents\
-                                .replace('{},'.format(task.id), '')
+                    t.parents = t.parents.replace('{},'.format(task.id), '')
 
                 if task.parents:
                     for t in task.parents.split(',')[:-1]:
@@ -244,7 +246,7 @@ class HandleTask(Bot):
 
                         task_dep = t.dependencies.split(',')
                         task_dep.pop()
-                        if task_dep == None:
+                        if task_dep is None:
                             task_dep = ''.join(task_dep)
                         else:
                             task_dep.remove(str(task_id))
@@ -257,8 +259,7 @@ class HandleTask(Bot):
                 db.session.delete(task)
                 db.session.commit()
                 text_message = 'Task [[{}]] deleted'
-                self.send_message(text_message\
-                             .format(task_id), chat)
+                self.send_message(text_message.format(task_id), chat)
 
     def todo(self, command, msg, chat):
         '''
@@ -270,8 +271,9 @@ class HandleTask(Bot):
                 self.msg_no_task(chat)
             else:
                 task_id = int(msg[i])
-                query = db.session.query(Task)\
-                                        .filter_by(id=task_id, chat=chat)
+#               Não está sendo utilizado
+#               query = db.session.query(Task).filter_by(id=task_id,
+#                                                         chat=chat)
                 try:
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
@@ -280,12 +282,12 @@ class HandleTask(Bot):
                 task.status = 'TODO'
                 db.session.commit()
                 text_message = '*TODO* task [[{}]] {}'
-                self.send_message(text_message\
-                             .format(task.id, task.name), chat)
+                self.send_message(text_message
+                                  .format(task.id, task.name), chat)
 
     def doing(self, command, msg, chat):
         '''
-        Adiciona uma task para o status DOING
+        Adiciona uma task para o status DgiOING
         '''
         msg = [i.strip() for i in msg.split(',')]
         for i in range(len(msg)):
@@ -293,8 +295,9 @@ class HandleTask(Bot):
                 self.msg_no_task(chat)
             else:
                 task_id = int(msg[i])
-                query = db.session.query(Task)\
-                                         .filter_by(id=task_id, chat=chat)
+#                Não está sendo utilizado
+#                query = db.session.query(Task).filter_by(id=task_id,
+#                                                         chat=chat)
                 try:
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
@@ -303,8 +306,8 @@ class HandleTask(Bot):
                 task.status = 'DOING'
                 db.session.commit()
                 text_message = '*DOING* task [[{}]] {}'
-                self.send_message(text_message\
-                             .format(task.id, task.name), chat)
+                self.send_message(text_message
+                                  .format(task.id, task.name), chat)
 
     def done(self, command, msg, chat):
         '''
@@ -316,8 +319,9 @@ class HandleTask(Bot):
                 self.msg_no_task(chat)
             else:
                 task_id = int(msg[i])
-                query = db.session.query(Task)\
-                                  .filter_by(id=task_id, chat=chat)
+#                Não esta sendo utilizado
+#                query = db.session.query(Task)\
+#                                  .filter_by(id=task_id, chat=chat)
                 try:
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
@@ -327,8 +331,8 @@ class HandleTask(Bot):
                 task.status = 'DONE'
                 db.session.commit()
                 text_message = '*DONE* task [[{}]] {}'
-                self.send_message(text_message\
-                             .format(task.id, task.name), chat)
+                self.send_message(text_message.format(task.id, task.name),
+                                  chat)
 
     def task_status(self, status, chat):
         '''
@@ -343,9 +347,8 @@ class HandleTask(Bot):
         elif status == 'DONE':
             msg_user += '\n' + CHECK + ' *DONE*\n'
 
-        query = db.session.query(Task)\
-                                 .filter_by(status=status, chat=chat)\
-                                 .order_by(Task.id)
+        query = db.session.query(Task).filter_by(status=status,
+                                                 chat=chat).order_by(Task.id)
 
         for task in query.all():
             msg_user += '{}[[{}]] {}\n'.format(ARROW, task.id, task.name)
@@ -365,9 +368,8 @@ class HandleTask(Bot):
         elif priority == 'low':
             msg_user += EXCLAMATION + ' low priority\n'
 
-        query = db.session.query(Task)\
-                                 .filter_by(priority=priority, chat=chat)\
-                                 .order_by(Task.id)
+        query = db.session.query(Task).filter_by(priority=priority,
+                                                 chat=chat).order_by(Task.id)
 
         for task in query.all():
             msg_user += '{}[[{}]] {}\n'.format(ARROW, task.id, task.name)
@@ -381,9 +383,8 @@ class HandleTask(Bot):
         msg_user = ''
 
         msg_user += CLIPBOARD + ' Task List\n'
-        query = db.session.query(Task)\
-                                .filter_by(parents='',\
-                                           chat=chat).order_by(Task.id)
+        query = db.session.query(Task).filter_by(parents='',
+                                                 chat=chat).order_by(Task.id)
         for task in query.all():
             icon = NEW
             if task.status == 'DOING':
@@ -394,10 +395,10 @@ class HandleTask(Bot):
                 icon = LIGHT
 
             if task.duedate:
-                msg_user += '[[{}]] {} {} {}{}\n'.format(task.id,\
-                                                            icon, task.name,\
-                                                            CALENDAR,\
-                                                            task.duedate)
+                msg_user += '[[{}]] {} {} {}{}\n'.format(task.id,
+                                                         icon, task.name,
+                                                         CALENDAR,
+                                                         task.duedate)
             else:
                 msg_user += '[[{}]] {} {}\n'.format(task.id, icon, task.name)
             msg_user += self.deps_text(task, chat)
@@ -409,7 +410,6 @@ class HandleTask(Bot):
         msg_user += self.task_status('TODO', chat)
         msg_user += self.task_status('DOING', chat)
         msg_user += self.task_status('DONE', chat)
-
 
         msg_user += '\n' + LIGHT + ' *PRIORITY*\n'
         msg_user += self.task_priority('high', chat)
@@ -426,7 +426,7 @@ class HandleTask(Bot):
             parent_id = task.parents.split(',')
             parent_id.pop()
 
-            numbers = [ int(id) for id in parent_id ]
+            numbers = [int(id) for id in parent_id]
 
             if target in numbers:
                 return False
@@ -452,8 +452,9 @@ class HandleTask(Bot):
                 self.msg_no_task(chat)
             else:
                 task_id = int(msg_indice)
-                query = db.session.query(Task).filter_by(id=task_id,\
-                                                         chat=chat)
+#               Não esta sendo utilizado
+#               query = db.session.query(Task).filter_by(id=task_id,
+#                                                         chat=chat)
                 try:
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
@@ -463,34 +464,34 @@ class HandleTask(Bot):
                 if text == '':
                     for i in task.dependencies.split(',')[:-1]:
                         i = int(i)
-                        q = db.session.query(Task).filter_by(id=i,\
+                        q = db.session.query(Task).filter_by(id=i,
                                                              chat=chat)
                         t = q.one()
-                        t.parents = t.parents.replace('{},'\
+                        t.parents = t.parents.replace('{},'
                                                       .format(task.id), '')
 
                     task.dependencies = ''
-                    self.send_message('Dependencies removed from task {}'\
-                                 .format(task_id), chat)
+                    self.send_message("Dependencies removed from task {}"
+                                      .format(task_id), chat)
                 else:
                     for depid in text.split(' '):
                         if not depid.isdigit():
-                            self.send_message('All dependencies ids must be'
-                                          ' numeric, and not {}'\
-                                          .format(depid), chat)
+                            self.send_message("All dependencies ids must be"
+                                              " numeric, and not {}"
+                                              .format(depid), chat)
                         else:
                             depid = int(depid)
-                            query = db.session.query(Task)\
-                                                     .filter_by(id=depid,\
-                                                     chat=chat)
+#                           Não está sendo utilizado
+#                           query = db.session.query(Task).filter_by(id=depid,
+#                                                                     chat=chat)
                             try:
                                 taskdep = self.query_one(depid, chat)
 
                                 if self.search_parent(task, taskdep.id, chat):
                                     taskdep.parents += str(task.id) + ','
                                 else:
-                                    self.send_message('Essa tarefa já é filha'
-                                                  ' da sub tarefa', chat)
+                                    self.send_message("Essa tarefa já é filha"
+                                                      " da sub tarefa", chat)
                                     break
                             except sqlalchemy.orm.exc.NoResultFound:
                                 self.task_not_found_msg(task_id, chat)
@@ -501,8 +502,7 @@ class HandleTask(Bot):
 
                 db.session.commit()
                 text_message = 'Task {} dependencies up to date'
-                self.send_message(text_message\
-                             .format(task_id), chat)
+                self.send_message(text_message.format(task_id), chat)
 
     def priority(self, command, msg, chat):
         '''
@@ -520,28 +520,28 @@ class HandleTask(Bot):
                 self.msg_no_task(chat)
             else:
                 task_id = int(msg_indice)
-                query = db.session.query(Task)\
-                                         .filter_by(id=task_id, chat=chat)
+#               Nao esta sendo utilizado
+#               query = db.session.query(Task)
+#                                        .filter_by(id=task_id, chat=chat)
                 try:
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
                     self.task_not_found_msg(task_id, chat)
                     return
 
-
                 if text == '':
                     task.priority = ''
-                    self.send_message('_Cleared_ all priorities from task {}'\
-                                 .format(task_id), chat)
+                    self.send_message("_Cleared_ all priorities from task {}"
+                                      .format(task_id), chat)
                 else:
                     if text.lower() not in ['high', 'medium', 'low']:
-                        self.send_message('The priority *must be* one of the'
-                                     ' following: high, medium, low', chat)
+                        self.send_message("The priority *must be* one of the "
+                                          "following: high, medium, low", chat)
                     else:
                         task.priority = text.lower()
-                        self.send_message('*Task {}* priority has priority'
-                                     ' *{}*'.format(task_id, text.lower()),\
-                                     chat)
+                        self.send_message("*Task {}* priority has priority "
+                                          "*{}*".format(task_id, text.lower()),
+                                          chat)
                 db.session.commit()
 
     def correct_date(self, text):
@@ -553,7 +553,6 @@ class HandleTask(Bot):
             return True
         except ValueError:
             return False
-
 
     def duedate(self, command, msg, chat):
         '''
@@ -572,7 +571,7 @@ class HandleTask(Bot):
                 self.msg_no_task(chat)
             else:
                 task_id = int(msg_indice)
-                print('task_id',task_id)
+                print('task_id', task_id)
                 query = db.session.query(Task).filter_by(id=task_id, chat=chat)
                 try:
                     task = query.one()
@@ -582,16 +581,16 @@ class HandleTask(Bot):
 
                 if text == '':
                     task.duedate = None
-                    self.send_message('_Cleared_ all duedates'
-                                ' from task {}'.format(task_id), chat)
+                    self.send_message("_Cleared_ all duedates"
+                                      " from task {}".format(task_id), chat)
                 else:
                     if not self.correct_date(text):
-                        self.send_message('The duedate *must follow* '
-                                        'the pattern: dd/mm/aaaa', chat)
+                        self.send_message("The duedate *must follow* "
+                                          "the pattern: dd/mm/aaaa", chat)
                     else:
                         task.duedate = datetime.strptime(text, '%d/%m/%Y')
-                        self.send_message('*Task {}* duedate:'
-                                ' *{}*'.format(task_id, text.lower()), chat)
+                        self.send_message("*Task {}* duedate: *{}*"
+                                          .format(task_id, text.lower()), chat)
                 db.session.commit()
 
     def handle_updates(self, updates):
@@ -649,13 +648,14 @@ class HandleTask(Bot):
                 self.duedate(command, msg, chat)
 
             elif command == '/start':
-                self.send_message('Welcome! Here is msg_user list of things you can do.'\
-                             , chat)
+                self.send_message("Welcome! Here is msg_user list"
+                                  " of things you can do.", chat)
                 self.send_message(self.HELP, chat)
 
             elif command == '/help':
-                self.send_message('Here is msg_user list of things you can do.', chat)
+                self.send_message("Here is msg_user list"
+                                  " of things you can do.", chat)
                 self.send_message(self.HELP, chat)
             else:
-                self.send_message('I\'m sorry. I\'m afraid I can\'t do that.'\
-                             , chat)
+                self.send_message("I'm sorry dave. I'm afraid"
+                                  " I can't do that.", chat)

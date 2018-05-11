@@ -1,8 +1,7 @@
 import json
 import requests
-import time
 import urllib
-from pathlib import Path
+
 
 class Bot():
     def __init__(self):
@@ -29,7 +28,7 @@ class Bot():
         com os parametros input_file e set_password
         '''
         with open('my_routinebot_files' + input_file) as infile:
-            if set_password == True:
+            if set_password is True:
                 lines = infile.readline()[1:]
             lines = infile.readline()
         info = ""
@@ -50,10 +49,10 @@ class Bot():
                  'body': body}
         r = session.post(url, json.dumps(issue))
         if r.status_code == 201:
-            print ('Successfully created Issue {0:s}'.format(title))
+            print('Successfully created Issue {0:s}'.format(title))
         else:
-            print ('Could not create Issue {0:s}'.format(title))
-            print ('Response:', r.content)
+            print('Could not create Issue {0:s}'.format(title))
+            print('Response:', r.content)
 
     def get_url(self, url):
         '''
