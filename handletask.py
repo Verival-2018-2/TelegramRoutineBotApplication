@@ -96,9 +96,9 @@ class HandleTask(Bot):
         msg = [i.strip() for i in msg.split(',')]
         for i in range(len(msg)):
             if msg is not None:
-                if len(msg[i].split(' ', 1)) > 1:
-                    text = msg[i].split(' ', 1)[1]
-                msg_indice = msg[i].split(' ', 1)[0]
+                if len(msg[i].split()) > 1:
+                    text = msg[i].split()[1]
+                msg_indice = msg[i].split()[0]
 
             if self.check_msg_not_exists(msg_indice):
                 self.msg_no_task(chat)
@@ -200,6 +200,10 @@ class HandleTask(Bot):
                 self.send_message(text_message.format(dep_task.id,
                                                       dep_task.name),
                                   chat)
+#                self.make_github_issue(task.name, 'Task of ID:[[{}]].\n\
+#                                       Name of task:{}'
+#                                      .format(task.id, task.name))
+
 
     def delete(self, command, msg, chat):
         '''
@@ -432,9 +436,9 @@ class HandleTask(Bot):
         msg = [i.strip() for i in msg.split(',')]
         for i in range(len(msg)):
             if msg is not None:
-                if len(msg[i].split(' ', 1)) > 1:
-                    text = msg[i].split(' ', 1)[1]
-                msg_indice = msg[i].split(' ', 1)[0]
+                if len(msg[i].split()) > 1:
+                    text = msg[i].split()[1]
+                msg_indice = msg[i].split()[0]
 
             if self.check_msg_not_exists(msg_indice):
                 self.msg_no_task(chat)
@@ -496,9 +500,9 @@ class HandleTask(Bot):
         msg = [i.strip() for i in msg.split(',')]
         for i in range(len(msg)):
             if msg is not None:
-                if len(msg[i].split(' ', 1)) > 1:
-                    text = msg[i].split(' ', 1)[1]
-                msg_indice = msg[i].split(' ', 1)[0]
+                if len(msg[i].split()) > 1:
+                    text = msg[i].split()[1]
+                msg_indice = msg[i].split()[0]
 
             if self.check_msg_not_exists(msg_indice):
                 self.msg_no_task(chat)
@@ -545,9 +549,9 @@ class HandleTask(Bot):
         msg = [i.strip() for i in msg.split(',')]
         for i in range(len(msg)):
             if msg is not None:
-                if len(msg[i].split(' ', 1)) > 1:
-                    text = msg[i].split(' ')[1]
-                msg_indice = msg[i].split(' ')[0]
+                if len(msg[i].split()) > 1:
+                    text = msg[i].split()[1]
+                msg_indice = msg[i].split()[0]
 
             if self.check_msg_not_exists(msg_indice):
                 self.msg_no_task(chat)
