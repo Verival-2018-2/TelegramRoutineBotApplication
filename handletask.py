@@ -109,7 +109,7 @@ class HandleTask(Bot):
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
                     self.task_not_found_msg(task_id, chat)
-                    return
+                    continue
 
                 if text == '':
                     text_message = ('You want to modify task {},'
@@ -180,7 +180,7 @@ class HandleTask(Bot):
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
                     self.task_not_found_msg(task_id, chat)
-                    return
+                    continue
 
                 dep_task = Task(chat=task.chat, name=task.name,
                                 status=task.status,
@@ -220,7 +220,7 @@ class HandleTask(Bot):
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
                     self.task_not_found_msg(task_id, chat)
-                    return
+                    continue
 
                 for t in task.dependencies.split(',')[:-1]:
                     query_dep = db.session.query(Task)\
@@ -274,7 +274,7 @@ class HandleTask(Bot):
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
                     self.task_not_found_msg(task_id, chat)
-                    return
+                    continue
                 task.status = 'TODO'
                 db.session.commit()
                 text_message = '*TODO* task [[{}]] {}'
@@ -296,7 +296,7 @@ class HandleTask(Bot):
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
                     self.task_not_found_msg(task_id, chat)
-                    return
+                    continue
                 task.status = 'DOING'
                 db.session.commit()
                 text_message = '*DOING* task [[{}]] {}'
@@ -318,7 +318,7 @@ class HandleTask(Bot):
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
                     self.task_not_found_msg(task_id, chat)
-                    return
+                    continue
 
                 task.status = 'DONE'
                 db.session.commit()
@@ -390,7 +390,10 @@ class HandleTask(Bot):
                 msg_user += '[[{}]] {} {} {}{}\n'.format(task.id,
                                                          icon, task.name,
                                                          CALENDAR,
-                                                         task.duedate)
+                                                         datetime.strptime\
+                                                         (str(task.duedate),\
+                                                         '%Y-%m-%d')\
+                                                         .strftime('%d/%m/%Y'))
             else:
                 msg_user += '[[{}]] {} {}\n'.format(task.id, icon, task.name)
             msg_user += self.deps_text(task, chat)
@@ -449,7 +452,7 @@ class HandleTask(Bot):
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
                     self.task_not_found_msg(task_id, chat)
-                    return
+                    continue
 
                 if text == '':
                     for i in task.dependencies.split(',')[:-1]:
@@ -490,6 +493,7 @@ class HandleTask(Bot):
 
                 db.session.commit()
                 text_message = 'Task {} dependencies up to date'
+                print('\nchat:',chat)
                 self.send_message(text_message.format(task_id), chat)
 
     def priority(self, command, msg, chat):
@@ -513,7 +517,7 @@ class HandleTask(Bot):
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
                     self.task_not_found_msg(task_id, chat)
-                    return
+                    continue
 
                 if text == '':
                     task.priority = ''
@@ -563,7 +567,7 @@ class HandleTask(Bot):
                     task = query.one()
                 except sqlalchemy.orm.exc.NoResultFound:
                     self.task_not_found_msg(task_id, chat)
-                    return
+                    continue
 
                 if text == '':
                     task.duedate = None
@@ -576,7 +580,7 @@ class HandleTask(Bot):
                     else:
                         task.duedate = datetime.strptime(text, '%d/%m/%Y')
                         self.send_message("*Task {}* duedate: *{}*"
-                                          .format(task_id, text.lower()), chat)
+                                          .format(task_id, text), chat)
                 db.session.commit()
 
     def handle_updates(self, updates):
