@@ -1,11 +1,17 @@
 import json
 import requests
 import urllib
+import os
 
 
 class Bot():
     def __init__(self):
-        self.TOKEN = self.get_infos_file('/token_my_routinebot.txt', False)
+        self.heroku_env = False
+        if os.environ.get('TOKEN'):#verifica se variável do heroku foi setada
+            self.heroku_env = True
+            self.TOKEN = os.environ['TOKEN']
+        else:
+            self.TOKEN = self.get_infos_file('/token_my_routinebot.txt', False)
         self.URL = 'https://api.telegram.org/bot{}/'.format(self.TOKEN)
         self.HELP = (
             '/new NOME\n'
@@ -43,8 +49,12 @@ class Bot():
         '''
         url = 'https://api.github.com/repos/TecProg-20181/my_routinebot/issues'
         session = requests.Session()
-        session.auth = (self.get_infos_file("/username_git.txt", False),
-                        self.get_infos_file("/username_git.txt", True))
+        if self.heroku_env:
+                session.auth = (os.environ['GIT_USER'],\
+                                os.environ['GIT_PASSWORD'])
+        else:
+            session.auth = (self.get_infos_file("/username_git.txt", False),
+                            self.get_infos_file("/username_git.txt", True))
         issue = {'title': title,
                  'body': body}
         r = session.post(url, json.dumps(issue))
