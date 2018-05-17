@@ -113,7 +113,6 @@ class HandleTask(Bot):
                 except sqlalchemy.orm.exc.NoResultFound:
                     self.task_not_found_msg(task_id, chat)
                     continue
-
                 if text == '':
                     text_message = ('You want to modify task {},'
                                     ' but you didn\t provide any new text')
@@ -184,14 +183,12 @@ class HandleTask(Bot):
                 except sqlalchemy.orm.exc.NoResultFound:
                     self.task_not_found_msg(task_id, chat)
                     continue
-
                 dep_task = Task(chat=task.chat, name=task.name,
                                 status=task.status,
                                 dependencies=task.dependencies,
                                 parents=task.parents,
                                 priority=task.priority, duedate=task.duedate)
                 db.session.add(dep_task)
-
                 for t in task.dependencies.split(',')[:-1]:
                     query_dep = db.session.query(Task).\
                                                 filter_by(id=int(t),
@@ -375,12 +372,23 @@ class HandleTask(Bot):
 
         return msg_user
 
+    def task_settings_msg(self, chat, msg_user):
+        msg_user += MEMO + ' _Status_\n'
+        msg_user += self.task_status('TODO', chat)
+        msg_user += self.task_status('DOING', chat)
+        msg_user += self.task_status('DONE', chat)
+
+        msg_user += '\n' + LIGHT + ' *PRIORITY*\n'
+        msg_user += self.task_priority('high', chat)
+        msg_user += self.task_priority('medium', chat)
+        msg_user += self.task_priority('low', chat)
+        return msg_user
+
     def list(self, command, msg, chat):
         '''
         Lista todas tasks suas prioridades, status e duedates
         '''
         msg_user = ''
-
         msg_user += CLIPBOARD + ' Task List\n'
         query = db.session.query(Task).filter_by(parents='',
                                                  chat=chat).order_by(Task.id)
@@ -392,7 +400,6 @@ class HandleTask(Bot):
                 icon = CHECK
             elif self.task_condition(task.priority, 'priority'):
                 icon = LIGHT
-
             if task.duedate:
                 msg_user += '[[{}]] {} {} {}{}\n'.format(task.id,
                                                          icon, task.name,
@@ -407,17 +414,7 @@ class HandleTask(Bot):
 
         self.send_message(msg_user, chat)
         msg_user = ''
-
-        msg_user += MEMO + ' _Status_\n'
-        msg_user += self.task_status('TODO', chat)
-        msg_user += self.task_status('DOING', chat)
-        msg_user += self.task_status('DONE', chat)
-
-        msg_user += '\n' + LIGHT + ' *PRIORITY*\n'
-        msg_user += self.task_priority('high', chat)
-        msg_user += self.task_priority('medium', chat)
-        msg_user += self.task_priority('low', chat)
-
+        msg_user = self.task_settings_msg(chat,msg_user)
         self.send_message(msg_user, chat)
 
     def search_parent(self, task, target, chat):
@@ -519,13 +516,11 @@ class HandleTask(Bot):
                 self.msg_no_task(chat)
             else:
                 task_id = int(msg_indice)
-
                 try:
                     task = self.query_one(task_id, chat)
                 except sqlalchemy.orm.exc.NoResultFound:
                     self.task_not_found_msg(task_id, chat)
                     continue
-
                 if text == '':
                     task.priority = ''
                     self.send_message("_Cleared_ all priorities from task {}"
@@ -556,7 +551,6 @@ class HandleTask(Bot):
         Define a duedate de uma task
         '''
         text = ''
-
         msg = self.strip_message(msg)
         for i in range(len(msg)):
             if msg is not None:
@@ -602,53 +596,38 @@ class HandleTask(Bot):
             else:
                 print('Can\'t process! {}'.format(update))
                 return
-
             command = message['text'].split(" ", 1)[0]
             msg = ''
             if len(message['text'].split(" ", 1)) > 1:
                 msg = message['text'].split(" ", 1)[1].strip()
-
             chat = message['chat']['id']
             print(command, msg, chat)
-
             if command == '/new':
                 self.new_task(command, msg, chat)
-
             elif command == '/rename':
                 self.rename(command, msg, chat)
-
             elif command == '/duplicate':
                 self.duplicate(command, msg, chat)
-
             elif command == '/delete':
                 self.delete(command, msg, chat)
-
             elif command == '/todo':
                 self.todo(command, msg, chat)
-
             elif command == '/doing':
                 self.doing(command, msg, chat)
-
             elif command == '/done':
                 self.done(command, msg, chat)
-
             elif command == '/list':
                 self.list(command, msg, chat)
-
             elif command == '/dependson':
                 self.dependson(command, msg, chat)
-
             elif command == '/priority':
                 self.priority(command, msg, chat)
-
             elif command == '/duedate':
                 self.duedate(command, msg, chat)
-
             elif command == '/start':
                 self.send_message("Welcome! Here is msg_user list"
                                   " of things you can do.", chat)
                 self.send_message(self.HELP, chat)
-
             elif command == '/help':
                 self.send_message("Here is msg_user list"
                                   " of things you can do.", chat)
