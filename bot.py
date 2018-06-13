@@ -49,6 +49,8 @@ class Bot():
         '''
         url = 'https://api.github.com/repos/TecProg-20181/my_routinebot/issues'
         session = requests.Session()
+        session.auth = (self.get_infos_file("/username_git.txt", False),
+                        self.get_infos_file("/username_git.txt", True))
         if self.heroku_env:
                 session.auth = (os.environ['GIT_USER'],\
                                 os.environ['GIT_PASSWORD'])
