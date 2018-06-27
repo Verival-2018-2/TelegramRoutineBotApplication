@@ -52,8 +52,8 @@ class Bot():
         session.auth = (self.get_infos_file("/username_git.txt", False),
                         self.get_infos_file("/username_git.txt", True))
         if self.heroku_env:
-                session.auth = (os.environ['GIT_USER'],\
-                                os.environ['GIT_PASSWORD'])
+            session.auth = (os.environ['GIT_USER'],\
+                           os.environ['GIT_PASSWORD'])
         else:
             session.auth = (self.get_infos_file("/username_git.txt", False),
                             self.get_infos_file("/username_git.txt", True))
