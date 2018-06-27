@@ -67,9 +67,9 @@ class HandleTask(Bot):
             db.session.commit()
             text_message = 'New task *TODO* [[{}]] {}'
             self.send_message(text_message.format(task.id, task.name), chat)
-            # self.make_github_issue(task.name, 'Task of ID:[[{}]].\n\
-            #                                    Name of task:{}'
-            #                                    .format(task.id, task.name))
+            self.make_github_issue(task.name, 'Task of ID:[[{}]].\n\
+                                               Name of task:{}'
+                                               .format(task.id, task.name))
 
     def condition_len_msg(self, msg):
         '''
@@ -200,9 +200,9 @@ class HandleTask(Bot):
                 self.send_message(text_message.format(dep_task.id,
                                                       dep_task.name),
                                   chat)
-#                self.make_github_issue(task.name, 'Task of ID:[[{}]].\n\
-#                                       Name of task:{}'
-#                                      .format(task.id, task.name))
+                self.make_github_issue(task.name, 'Task of ID:[[{}]].\n\
+                                       Name of task:{}'
+                                      .format(task.id, task.name))
 
 
     def delete(self, command, msg, chat):
