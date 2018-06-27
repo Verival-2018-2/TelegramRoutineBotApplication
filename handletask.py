@@ -141,7 +141,7 @@ class HandleTask(Bot):
             icon = NEW
             if self.task_condition(dep.status, 'DOING'):
                 icon = CIRCLE
-            elif self.task_condition(status, 'DONE'):
+            elif self.task_condition(dep.status, 'DONE'):
                 icon = CHECK
 
             if i + 1 == len(task.dependencies.split(',')[:-1]):
