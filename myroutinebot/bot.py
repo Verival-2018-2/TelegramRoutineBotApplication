@@ -7,9 +7,9 @@ import os
 class Bot():
     def __init__(self):
         self.heroku_env = False
-        if os.environ.get('SECRET_TOKEN'):#verifica se variável do heroku foi setada
+        if os.environ.get('BOT_TOKEN'):#verifica se variável do heroku foi setada
             self.heroku_env = True
-            self.TOKEN = os.environ['SECRET_TOKEN']
+            self.TOKEN = os.environ['BOT_TOKEN']
         else:
             self.TOKEN = "597151993:AAFYtCYeSONpV_8Fj16EmAF16XQjG0grvVo"
         self.URL = 'https://api.telegram.org/bot{}/'.format(self.TOKEN)
