@@ -11,7 +11,7 @@ class Bot():
             self.heroku_env = True
             self.TOKEN = os.environ['SECRET_TOKEN']
         else:
-            self.TOKEN = self.get_infos_file('/token_my_routinebot.txt', False)
+            self.TOKEN = "597151993:AAFYtCYeSONpV_8Fj16EmAF16XQjG0grvVo"
         self.URL = 'https://api.telegram.org/bot{}/'.format(self.TOKEN)
         self.HELP = (
             '/new NOME\n'
