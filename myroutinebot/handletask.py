@@ -67,28 +67,15 @@ class HandleTask(Bot):
             db.session.commit()
             text_message = 'New task *TODO* [[{}]] {}'
             self.send_message(text_message.format(task.id, task.name), chat)
-            self.make_github_issue(task.name, 'Task of ID:[[{}]].\n\
-                                               Name of task:{}'
-                                               .format(task.id, task.name))
+            # self.make_github_issue(task.name, 'Task of ID:[[{}]].\n\
+            #                                    Name of task:{}'
+            #                                    .format(task.id, task.name))
 
     def condition_len_msg(self, msg):
         '''
         Retorna true caso o tamanho da mensagem seja maior que uma palavra
         '''
         if len(msg.split(' ', 1)) > 1:
-            return True
-
-    def split_msg(self, msg, element):
-        '''
-        Realiza o split de uma mensagem
-        '''
-        return msg.split(' ', 1)[element]
-
-    def msg_not_empty(self, msg):
-        '''
-        Retorna true caso a mensagem não esteja vazia
-        '''
-        if msg != '':
             return True
 
     def rename(self, command, msg, chat):
@@ -603,6 +590,8 @@ class HandleTask(Bot):
             chat = message['chat']['id']
             print(command, msg, chat)
             if command == '/new':
+                print('###################')
+                print(command, msg, chat)
                 self.new_task(command, msg, chat)
             elif command == '/rename':
                 self.rename(command, msg, chat)
