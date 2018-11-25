@@ -17,3 +17,11 @@ def test_check_msg_not_exists():
 def test_condition_len_msg():
     handletask = HandleTask()
     assert handletask.condition_len_msg('2, test') == True
+
+def test_correct_date():
+    handletask = HandleTask()
+    assert handletask.correct_date('20/12/2018') == True
+
+def test_correct_date_fail():
+    handletask = HandleTask()
+    assert handletask.correct_date('2018/12/12') == False

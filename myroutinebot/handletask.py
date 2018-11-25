@@ -349,7 +349,8 @@ class HandleTask(Bot):
 
         for task in query.all():
             msg_user += '{}[[{}]] {}\n'.format(ARROW, task.id, task.name)
-
+        print('AAAAAAAAAAAAAA')
+        print(msg_user)
         return msg_user
 
     def task_settings_msg(self, chat, msg_user):
@@ -364,7 +365,7 @@ class HandleTask(Bot):
         msg_user += self.task_priority('low', chat)
         return msg_user
 
-    def list(self, command, msg, chat):
+    def lista(self, command, msg, chat):
         '''
         Lista todas tasks suas prioridades, status e duedates
         '''
@@ -599,7 +600,7 @@ class HandleTask(Bot):
             elif command == '/done':
                 self.done(command, msg, chat)
             elif command == '/list':
-                self.list(command, msg, chat)
+                self.lista(command, msg, chat)
             elif command == '/dependson':
                 self.dependson(command, msg, chat)
             elif command == '/priority':
