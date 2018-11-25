@@ -29,6 +29,9 @@ class Bot():
         '''
         response = requests.get(url)
         content = response.content.decode("utf8")
+        print('#########GET URL###############')
+        print(type(content))
+        print('########GET URL##############')
         return content
 
     def get_json_from_url(self, url):
