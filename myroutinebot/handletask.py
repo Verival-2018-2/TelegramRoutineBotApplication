@@ -239,6 +239,13 @@ class HandleTask(Bot):
                 text_message = 'Task [[{}]] deleted'
                 self.send_message(text_message.format(task_id), chat)
 
+    def task_state(self, task, chat, state):
+        task.status = state
+        db.session.commit()
+        text_message = '*'+ state +'* task [[{}]] {}'
+        self.send_message(text_message
+                            .format(task.id, task.name), chat)
+
     def todo(self, command, msg, chat):
         '''
         Adiciona uma task para o status TODO
@@ -255,15 +262,12 @@ class HandleTask(Bot):
                 except sqlalchemy.orm.exc.NoResultFound:
                     self.task_not_found_msg(task_id, chat)
                     continue
-                task.status = 'TODO'
-                db.session.commit()
-                text_message = '*TODO* task [[{}]] {}'
-                self.send_message(text_message
-                                  .format(task.id, task.name), chat)
+                state = 'TODO'
+                self.task_state(task, chat, state)
 
     def doing(self, command, msg, chat):
         '''
-        Adiciona uma task para o status DgiOING
+        Adiciona uma task para o status DOING
         '''
         msg = self.strip_message(msg)
         for i in range(len(msg)):
@@ -277,11 +281,8 @@ class HandleTask(Bot):
                 except sqlalchemy.orm.exc.NoResultFound:
                     self.task_not_found_msg(task_id, chat)
                     continue
-                task.status = 'DOING'
-                db.session.commit()
-                text_message = '*DOING* task [[{}]] {}'
-                self.send_message(text_message
-                                  .format(task.id, task.name), chat)
+                state = 'DOING'
+                self.task_state(task, chat, state)
 
     def done(self, command, msg, chat):
         '''
@@ -299,12 +300,8 @@ class HandleTask(Bot):
                 except sqlalchemy.orm.exc.NoResultFound:
                     self.task_not_found_msg(task_id, chat)
                     continue
-
-                task.status = 'DONE'
-                db.session.commit()
-                text_message = '*DONE* task [[{}]] {}'
-                self.send_message(text_message.format(task.id, task.name),
-                                  chat)
+                state = 'DONE'
+                self.task_state(task, chat, state)
 
     def task_condition(self, task, condition):
         if task  == condition:
@@ -349,8 +346,6 @@ class HandleTask(Bot):
 
         for task in query.all():
             msg_user += '{}[[{}]] {}\n'.format(ARROW, task.id, task.name)
-        print('AAAAAAAAAAAAAA')
-        print(msg_user)
         return msg_user
 
     def task_settings_msg(self, chat, msg_user):
